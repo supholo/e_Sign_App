@@ -52,6 +52,7 @@ export function DocumentList() {
         branchName: "N/A",
         customerName: "N/A",
         documentType: "N/A",
+        amount: 0,
       })
       setDocuments([...documents, newDocument])
       setShowUploadModal(false)
@@ -129,10 +130,7 @@ export function DocumentList() {
               <TableRow>
                 <TableHead>Document</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Account Number</TableHead>
-                <TableHead>Branch Name</TableHead>
-                <TableHead>Customer Name</TableHead>
-                <TableHead>Document Type</TableHead>
+                <TableHead>Uploaded By</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -163,10 +161,7 @@ export function DocumentList() {
                       {doc.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{doc.accountNumber}</TableCell>
-                  <TableCell>{doc.branchName}</TableCell>
-                  <TableCell>{doc.customerName}</TableCell>
-                  <TableCell>{doc.documentType}</TableCell>
+                  <TableCell>{doc.uploadedBy}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button variant="ghost" size="icon">

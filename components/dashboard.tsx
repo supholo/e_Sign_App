@@ -2,14 +2,18 @@
 
 import { useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, Clock, CheckCircle, FileSignature } from "lucide-react"
+import { FileText, Clock, CheckCircle, XCircle, RotateCcw } from "lucide-react"
 import { RecentActivities } from "@/components/recent-activities"
 import { useDashboardData } from "@/hooks/use-dashboard-data"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useToast } from "@/components/ui/use-toast"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Search, Download } from "lucide-react"
 
 export function Dashboard() {
   const { dashboardData, refreshDashboardData } = useDashboardData()
@@ -29,13 +33,6 @@ export function Dashboard() {
     }
   }, [refreshDashboardData])
 
-  useEffect(() => {
-    toast({
-      title: "Dashboard Updated",
-      description: "The dashboard data has been refreshed.",
-    })
-  }, [toast])
-
   const statusColors = {
     Draft: "bg-gray-500",
     "In Workflow": "bg-blue-500",
@@ -48,63 +45,166 @@ export function Dashboard() {
     count,
   }))
 
+  const documentStatuses = [
+    {
+      label: "Pending",
+      count: dashboardData.statusCounts.pending,
+      icon: Clock,
+      color: "bg-orange-500",
+    },
+    {
+      label: "Drafts",
+      count: dashboardData.statusCounts.drafts,
+      icon: FileText,
+      color: "bg-gray-500",
+    },
+    {
+      label: "Completed",
+      count: dashboardData.statusCounts.completed,
+      icon: CheckCircle,
+      color: "bg-green-500",
+    },
+    {
+      label: "Declined",
+      count: dashboardData.statusCounts.declined,
+      icon: XCircle,
+      color: "bg-red-500",
+    },
+    {
+      label: "Recalled",
+      count: dashboardData.statusCounts.recalled,
+      icon: RotateCcw,
+      color: "bg-purple-500",
+    },
+  ]
+
   return (
     <div className="space-y-4 animate-fade-in max-w-[1200px] mx-auto">
       <h1 className="text-2xl font-bold tracking-tight mb-6">Dashboard Overview</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          {
-            title: "Total Documents",
-            icon: FileText,
-            value: dashboardData.totalDocuments,
-            subValue: `${dashboardData.documentsByStatus["Signed"] || 0} signed documents`,
-            color: "text-blue-600",
-          },
-          {
-            title: "Active Workflows",
-            icon: Clock,
-            value: dashboardData.activeWorkflows.length,
-            subValue: `${dashboardData.documentsByStatus["In Workflow"] || 0} documents in workflow`,
-            color: "text-green-600",
-          },
-          {
-            title: "Pending Signatures",
-            icon: FileSignature,
-            value: dashboardData.pendingSignatures.length,
-            subValue: `${dashboardData.documentsByStatus["Pending for Sign"] || 0} documents awaiting signature`,
-            color: "text-yellow-600",
-          },
-          {
-            title: "Completion Rate",
-            icon: CheckCircle,
-            value: `${Math.round(((dashboardData.documentsByStatus["Signed"] || 0) / dashboardData.totalDocuments) * 100)}%`,
-            subValue: null,
-            color: "text-purple-600",
-          },
-        ].map((item, index) => (
+
+      {/* Document Status Cards */}
+      <div className="grid gap-4 md:grid-cols-5">
+        {documentStatuses.map((status, index) => (
           <Card
-            key={index}
-            className="card-neo card-hover animate-slide-in overflow-hidden"
+            key={status.label}
+            className="card-neo card-hover animate-slide-in"
             style={{ animationDelay: `${index * 0.1}s` }}
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
-              <item.icon className={`h-4 w-4 ${item.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{item.value}</div>
-              {item.subValue && <p className="text-xs text-muted-foreground">{item.subValue}</p>}
-              {item.title === "Completion Rate" && (
-                <Progress
-                  value={((dashboardData.documentsByStatus["Signed"] || 0) / dashboardData.totalDocuments) * 100}
-                  className="mt-2"
-                />
-              )}
+            <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+              <status.icon className={`h-8 w-8 mb-2 ${status.color} text-white rounded-full p-1.5`} />
+              <div className="text-2xl font-bold">{status.count}</div>
+              <div className="text-sm text-muted-foreground">{status.label}</div>
             </CardContent>
           </Card>
         ))}
       </div>
 
+      {/* Document Tabs */}
+      <Card className="mt-6">
+        <CardContent className="p-6">
+          <Tabs defaultValue="my-signatures">
+            <div className="flex justify-between items-center mb-4">
+              <TabsList>
+                <TabsTrigger value="my-signatures" className="relative">
+                  My Signatures
+                  <Badge className="ml-2 bg-primary text-primary-foreground">0</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="waiting-for-others">
+                  Waiting for Others
+                  <Badge className="ml-2 bg-primary text-primary-foreground">0</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="shared-with-me">
+                  Shared With Me
+                  <Badge className="ml-2 bg-primary text-primary-foreground">0</Badge>
+                </TabsTrigger>
+              </TabsList>
+              <div className="flex items-center space-x-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input className="pl-9" placeholder="Search..." />
+                </div>
+                <Button variant="outline" size="icon">
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <TabsContent value="my-signatures">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Document No</TableHead>
+                    <TableHead>Reference No</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No Data Available
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            <TabsContent value="waiting-for-others">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Document No</TableHead>
+                    <TableHead>Reference No</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No Data Available
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            <TabsContent value="shared-with-me">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Document No</TableHead>
+                    <TableHead>Reference No</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No Data Available
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Original Dashboard Content */}
       <div className="grid gap-4 md:grid-cols-7">
         <Card className="card-neo card-hover animate-slide-in md:col-span-4" style={{ animationDelay: "0.4s" }}>
           <CardHeader className="pb-2">

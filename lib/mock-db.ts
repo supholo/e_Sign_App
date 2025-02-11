@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid"
 export type Document = {
   id: string
   name: string
-  status: "Draft" | "In Workflow" | "Pending for Sign" | "Signed"
+  status: "Draft" | "In Workflow" | "Pending for Sign" | "Signed" | "Declined" | "Recalled" // Added new statuses
   uploadedBy: string
   date: string
   size: string
@@ -13,6 +13,7 @@ export type Document = {
   branchName: string
   customerName: string
   documentType: string
+  amount: number
   currentStep?: number
 }
 
@@ -115,7 +116,7 @@ class MockDatabase {
         branchName: "Main Branch",
         customerName: "Alice Johnson",
         documentType: "Contract",
-        currentStep: undefined,
+        amount: 10000,
       },
       {
         id: uuidv4(),
@@ -129,7 +130,7 @@ class MockDatabase {
         branchName: "Downtown Branch",
         customerName: "Bob Williams",
         documentType: "NDA",
-        currentStep: undefined,
+        amount: 5000,
       },
       {
         id: uuidv4(),
@@ -143,7 +144,7 @@ class MockDatabase {
         branchName: "Corporate Branch",
         customerName: "Charlie Brown",
         documentType: "Proposal",
-        currentStep: undefined,
+        amount: 25000,
       },
     ]
 
@@ -205,8 +206,8 @@ class MockDatabase {
       action: "created",
       itemId: newDocument.id,
       itemName: newDocument.name,
-      userId: "current-user-id",
-      userName: "Current User",
+      userId: "current-user-id", // Replace with actual user ID when authentication is implemented
+      userName: "Current User", // Replace with actual user name when authentication is implemented
     })
     this.addAuditLog({
       type: "document",

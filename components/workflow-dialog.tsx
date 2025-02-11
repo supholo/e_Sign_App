@@ -281,6 +281,12 @@ export function WorkflowDialog({ workflow, document, open, onOpenChange, onUpdat
                         <span className="text-sm">{document.documentType}</span>
                       </div>
                       <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Amount:</span>
+                        <span className="text-sm">
+                          {document.amount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
                         <span className="text-sm text-gray-500">Size:</span>
                         <span className="text-sm">{document.size}</span>
                       </div>

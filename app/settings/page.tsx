@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Layout } from "@/components/layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,74 +8,65 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { mockDb, type Workflow, type WorkflowStep } from "@/lib/mock-db"
-import { Plus, Edit, Trash2 } from "lucide-react"
-import AddWorkflowDialog from "@/components/AddWorkflowDialog"
+import {
+  Users,
+  GitBranch,
+  Shield,
+  Mail,
+  Activity,
+  FileText,
+  BadgeIcon as Certificate,
+  Key,
+  Paintbrush,
+  LayoutDashboard,
+  Receipt,
+  Star,
+  Building2,
+  UserCog,
+  Sliders,
+  FileJson,
+} from "lucide-react"
+
+const adminSettings = [
+  { icon: Activity, label: "Subscription", href: "/settings/subscription" },
+  { icon: Building2, label: "Manage Departments", href: "/settings/departments" },
+  { icon: Users, label: "Manage Users", href: "/settings/users" },
+  { icon: GitBranch, label: "Manage Workflows", href: "/settings/workflows" },
+  { icon: Shield, label: "Access Management", href: "/settings/access" },
+  { icon: UserCog, label: "Manage Authorizer", href: "/settings/authorizer" },
+  { icon: Paintbrush, label: "Customization", href: "/settings/customization" },
+  { icon: Mail, label: "Email Templates", href: "/settings/email-templates" },
+  { icon: Activity, label: "Activity Log", href: "/settings/activity-log" },
+  { icon: FileText, label: "Custom Fields", href: "/settings/custom-fields" },
+  { icon: Sliders, label: "Advanced Settings", href: "/settings/advanced" },
+  { icon: FileJson, label: "PDF Settings", href: "/settings/pdf-settings" },
+  { icon: Certificate, label: "Certificate Settings", href: "/settings/certificate" },
+  { icon: Key, label: "DSC Settings", href: "/settings/dsc" },
+  { icon: Paintbrush, label: "Branding Settings", href: "/settings/branding" },
+]
+
+const gatewaySettings = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/settings/gateway-dashboard" },
+  { icon: Receipt, label: "Transaction Log", href: "/settings/transaction-log" },
+  { icon: Star, label: "DSC Branding", href: "/settings/dsc-branding" },
+]
 
 export default function Settings() {
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [smsNotifications, setSmsNotifications] = useState(false)
-  const [workflows, setWorkflows] = useState<Workflow[]>([])
-  const [showWorkflowDialog, setShowWorkflowDialog] = useState(false)
-  const [editingWorkflow, setEditingWorkflow] = useState<Workflow | null>(null)
-  const [newWorkflowName, setNewWorkflowName] = useState("")
-  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([])
-
-  useEffect(() => {
-    setWorkflows(mockDb.getWorkflows())
-  }, [])
-
-  const handleAddWorkflow = (name: string, steps: WorkflowStep[]) => {
-    const newWorkflow = mockDb.addWorkflow({
-      name,
-      status: "Active",
-      creator: "Current User",
-      createdDate: new Date().toISOString().split("T")[0],
-      currentStep: 0,
-      steps,
-    })
-
-    setWorkflows(mockDb.getWorkflows())
-    setShowWorkflowDialog(false)
-    setWorkflowSteps([])
-  }
-
-  const handleUpdateWorkflow = () => {
-    if (editingWorkflow && newWorkflowName && workflowSteps.length > 0) {
-      const updatedWorkflow = mockDb.updateWorkflow(editingWorkflow.id, {
-        name: newWorkflowName,
-        steps: workflowSteps,
-      })
-
-      if (updatedWorkflow) {
-        setWorkflows(mockDb.getWorkflows())
-        setShowWorkflowDialog(false)
-        setEditingWorkflow(null)
-        setNewWorkflowName("")
-        setWorkflowSteps([])
-      }
-    }
-  }
-
-  const handleDeleteWorkflow = (id: string) => {
-    if (confirm("Are you sure you want to delete this workflow?")) {
-      mockDb.deleteWorkflow(id)
-      setWorkflows(mockDb.getWorkflows())
-    }
-  }
 
   return (
     <Layout>
       <div className="space-y-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
         <Tabs defaultValue="account" className="w-full">
-          <TabsList>
+          <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="account">Account</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
-            <TabsTrigger value="workflows">Workflows</TabsTrigger>
+            <TabsTrigger value="admin">Admin Settings</TabsTrigger>
+            <TabsTrigger value="gateway">Gateway Settings</TabsTrigger>
           </TabsList>
+
           <TabsContent value="account">
             <Card>
               <CardHeader>
@@ -97,6 +88,7 @@ export default function Settings() {
               </CardFooter>
             </Card>
           </TabsContent>
+
           <TabsContent value="notifications">
             <Card>
               <CardHeader>
@@ -109,16 +101,12 @@ export default function Settings() {
                   <Switch
                     id="email-notifications"
                     checked={emailNotifications}
-                    onChange={(e) => setEmailNotifications(e.target.checked)}
+                    onCheckedChange={setEmailNotifications}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label htmlFor="sms-notifications">SMS Notifications</Label>
-                  <Switch
-                    id="sms-notifications"
-                    checked={smsNotifications}
-                    onChange={(e) => setSmsNotifications(e.target.checked)}
-                  />
+                  <Switch id="sms-notifications" checked={smsNotifications} onCheckedChange={setSmsNotifications} />
                 </div>
               </CardContent>
               <CardFooter>
@@ -126,89 +114,58 @@ export default function Settings() {
               </CardFooter>
             </Card>
           </TabsContent>
-          <TabsContent value="security">
+
+          <TabsContent value="admin">
             <Card>
               <CardHeader>
-                <CardTitle>Security Settings</CardTitle>
-                <CardDescription>Manage your account security.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="current-password">Current Password</Label>
-                  <Input id="current-password" type="password" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">New Password</Label>
-                  <Input id="new-password" type="password" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input id="confirm-password" type="password" />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button>Update Password</Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          <TabsContent value="workflows">
-            <Card>
-              <CardHeader>
-                <CardTitle>Workflow Management</CardTitle>
-                <CardDescription>Create, update, and delete workflow templates.</CardDescription>
+                <CardTitle>Admin Settings</CardTitle>
+                <CardDescription>Manage system-wide settings and configurations.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex justify-end mb-4">
-                  <Button onClick={() => setShowWorkflowDialog(true)}>
-                    <Plus className="mr-2 h-4 w-4" /> Add Workflow
-                  </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {adminSettings.map((setting) => (
+                    <Card key={setting.href} className="hover:bg-accent transition-colors cursor-pointer">
+                      <CardContent className="p-4 flex items-center space-x-4">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <setting.icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">{setting.label}</h3>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Steps</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {workflows.map((workflow) => (
-                      <TableRow key={workflow.id}>
-                        <TableCell>{workflow.name}</TableCell>
-                        <TableCell>{workflow.steps.map((step) => step.name).join(", ")}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setEditingWorkflow(workflow)
-                                setNewWorkflowName(workflow.name)
-                                setWorkflowSteps(workflow.steps)
-                                setShowWorkflowDialog(true)
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteWorkflow(workflow.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="gateway">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gateway Settings</CardTitle>
+                <CardDescription>Configure payment and transaction settings.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {gatewaySettings.map((setting) => (
+                    <Card key={setting.href} className="hover:bg-accent transition-colors cursor-pointer">
+                      <CardContent className="p-4 flex items-center space-x-4">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <setting.icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">{setting.label}</h3>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-      <AddWorkflowDialog
-        open={showWorkflowDialog}
-        onOpenChange={setShowWorkflowDialog}
-        onAddWorkflow={handleAddWorkflow}
-      />
     </Layout>
   )
 }

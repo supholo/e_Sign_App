@@ -39,6 +39,7 @@ export default function Documents() {
   const [newBranchName, setNewBranchName] = useState("")
   const [newCustomerName, setNewCustomerName] = useState("")
   const [newDocumentType, setNewDocumentType] = useState("")
+  const [newAmount, setNewAmount] = useState("")
 
   useEffect(() => {
     const fetchData = () => {
@@ -88,6 +89,7 @@ export default function Documents() {
         branchName: newBranchName,
         customerName: newCustomerName,
         documentType: newDocumentType,
+        amount: Number.parseFloat(newAmount),
       })
 
       setDocuments(mockDb.getDocuments())
@@ -98,6 +100,7 @@ export default function Documents() {
       setNewBranchName("")
       setNewCustomerName("")
       setNewDocumentType("")
+      setNewAmount("")
       toast({
         title: "Document uploaded",
         description: `${newDocumentName} has been successfully uploaded.`,
@@ -139,6 +142,7 @@ export default function Documents() {
                   <TableHead>Branch Name</TableHead>
                   <TableHead>Customer Name</TableHead>
                   <TableHead>Document Type</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -170,6 +174,7 @@ export default function Documents() {
                     <TableCell>{doc.branchName}</TableCell>
                     <TableCell>{doc.customerName}</TableCell>
                     <TableCell>{doc.documentType}</TableCell>
+                    <TableCell>{doc.amount.toLocaleString("en-US", { style: "currency", currency: "USD" })}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button
@@ -307,6 +312,18 @@ export default function Documents() {
                   id="documentType"
                   value={newDocumentType}
                   onChange={(e) => setNewDocumentType(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="amount" className="text-right">
+                  Amount
+                </Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  value={newAmount}
+                  onChange={(e) => setNewAmount(e.target.value)}
                   className="col-span-3"
                 />
               </div>

@@ -10,6 +10,7 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "eSignPro - Document Signing System",
   description: "Secure and efficient document signing solution",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -28,3 +29,6 @@ export default function RootLayout({
   )
 }
 
+
+
+import './globals.css'

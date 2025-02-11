@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { mockDb, type Document, type Workflow, type Signature } from "@/lib/mock-db"
 
 export type DashboardData = {
@@ -9,6 +9,13 @@ export type DashboardData = {
   recentDocuments: Document[]
   activeWorkflows: Workflow[]
   pendingSignatures: Signature[]
+  statusCounts: {
+    pending: number
+    drafts: number
+    completed: number
+    declined: number
+    recalled: number
+  }
 }
 
 export function useDashboardData() {
@@ -18,9 +25,16 @@ export function useDashboardData() {
     recentDocuments: [],
     activeWorkflows: [],
     pendingSignatures: [],
+    statusCounts: {
+      pending: 0,
+      drafts: 0,
+      completed: 0,
+      declined: 0,
+      recalled: 0,
+    },
   })
 
-  const fetchDashboardData = () => {
+  const fetchDashboardData = useCallback(() => {
     const documents = mockDb.getDocuments()
     const workflows = mockDb.getWorkflows()
     const signatures = mockDb.getSignatures()
@@ -33,18 +47,28 @@ export function useDashboardData() {
       {} as Record<string, number>,
     )
 
+    // Calculate status counts
+    const statusCounts = {
+      pending: documents.filter((doc) => doc.status === "Pending for Sign").length,
+      drafts: documents.filter((doc) => doc.status === "Draft").length,
+      completed: documents.filter((doc) => doc.status === "Signed").length,
+      declined: documents.filter((doc) => doc.status === "Declined").length,
+      recalled: documents.filter((doc) => doc.status === "Recalled").length,
+    }
+
     setDashboardData({
       totalDocuments: documents.length,
       documentsByStatus,
       recentDocuments: documents.slice(0, 5),
       activeWorkflows: workflows.filter((wf) => wf.status === "Active"),
       pendingSignatures: signatures.filter((sig) => sig.status === "Pending"),
+      statusCounts,
     })
-  }
+  }, [])
 
   useEffect(() => {
     fetchDashboardData()
-  }, [mockDb]) // Added mockDb as a dependency
+  }, [fetchDashboardData])
 
   return { dashboardData, refreshDashboardData: fetchDashboardData }
 }

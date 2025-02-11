@@ -9,7 +9,8 @@ export function RecentActivities() {
 
   useEffect(() => {
     const fetchActivities = () => {
-      setActivities(mockDb.getRecentActivities())
+      const allActivities = mockDb.getRecentActivities()
+      setActivities(allActivities.slice(0, 6)) // Only take the last 6 entries
     }
 
     fetchActivities()

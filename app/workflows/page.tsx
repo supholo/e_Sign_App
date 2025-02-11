@@ -79,6 +79,7 @@ export default function Workflows() {
                     <TableHead className="w-[140px]">Branch Name</TableHead>
                     <TableHead className="w-[140px]">Customer Name</TableHead>
                     <TableHead className="w-[140px]">Document Type</TableHead>
+                    <TableHead className="w-[120px] text-right">Amount</TableHead>
                     <TableHead className="w-[200px]">Workflow</TableHead>
                     <TableHead className="w-[140px]">Current Step</TableHead>
                     <TableHead className="w-[100px] text-right">Actions</TableHead>
@@ -126,6 +127,12 @@ export default function Workflows() {
                         <TableCell>
                           <span className="truncate block max-w-[120px]">{document.documentType}</span>
                         </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {document.amount.toLocaleString("en-US", {
+                            style: "currency",
+                            currency: "USD",
+                          })}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <div className="bg-primary/10 p-1.5 rounded-full">
@@ -157,7 +164,7 @@ export default function Workflows() {
                   })}
                   {filteredDocuments.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={9} className="h-24 text-center">
+                      <TableCell colSpan={10} className="h-24 text-center">
                         <div className="flex flex-col items-center justify-center text-muted-foreground">
                           <FileText className="h-8 w-8 mb-2" />
                           <span className="text-sm">No documents found in workflow</span>
