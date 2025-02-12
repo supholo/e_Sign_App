@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Layout } from "@/components/layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import {
   Users,
   GitBranch,
@@ -31,7 +32,7 @@ const adminSettings = [
   { icon: Activity, label: "Subscription", href: "/settings/subscription" },
   { icon: Building2, label: "Manage Departments", href: "/settings/departments" },
   { icon: Users, label: "Manage Users", href: "/settings/users" },
-  { icon: GitBranch, label: "Manage Workflows", href: "/settings/workflows" },
+  { icon: GitBranch, label: "Manage Workflows", href: "/manage-workflows" },
   { icon: Shield, label: "Access Management", href: "/settings/access" },
   { icon: UserCog, label: "Manage Authorizer", href: "/settings/authorizer" },
   { icon: Paintbrush, label: "Customization", href: "/settings/customization" },
@@ -54,6 +55,7 @@ const gatewaySettings = [
 export default function Settings() {
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [smsNotifications, setSmsNotifications] = useState(false)
+  const router = useRouter()
 
   return (
     <Layout>
@@ -124,7 +126,11 @@ export default function Settings() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {adminSettings.map((setting) => (
-                    <Card key={setting.href} className="hover:bg-accent transition-colors cursor-pointer">
+                    <Card
+                      key={setting.href}
+                      className="hover:bg-accent transition-colors cursor-pointer"
+                      onClick={() => router.push(setting.href)}
+                    >
                       <CardContent className="p-4 flex items-center space-x-4">
                         <div className="p-2 bg-primary/10 rounded-lg">
                           <setting.icon className="h-5 w-5 text-primary" />

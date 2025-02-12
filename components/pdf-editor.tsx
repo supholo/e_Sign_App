@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Document, Page, pdfjs } from "react-pdf"
+import { Document, Page } from "@react-pdf/renderer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,8 +19,6 @@ import {
   ZoomOut,
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
 
 type FieldType = "text" | "checkbox" | "signature" | "date"
 

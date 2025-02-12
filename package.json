@@ -58,11 +58,14 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
-    "@types/react": "latest",
     "@emotion/is-prop-valid": "latest",
-    "react-pdf": "latest",
+    "@types/react": "latest",
+    "@react-pdf/renderer": "latest",
     "@hello-pangea/dnd": "latest",
     "framer-motion": "latest",
+    "@dnd-kit/core": "latest",
+    "react-pdf": "latest",
+    "classnames": "latest",
     "uuid": "latest"
   },
   "devDependencies": {

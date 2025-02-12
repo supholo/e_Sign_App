@@ -182,9 +182,11 @@ export default function Workflows() {
         workflow={selectedWorkflow}
         document={selectedDocument}
         open={!!selectedWorkflow && !!selectedDocument}
-        onOpenChange={() => {
-          setSelectedWorkflow(null)
-          setSelectedDocument(null)
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedWorkflow(null)
+            setSelectedDocument(null)
+          }
         }}
         onUpdateWorkflow={handleUpdateWorkflow}
       />

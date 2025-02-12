@@ -167,5 +167,32 @@
   .responsive-container {
     @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
   }
+
+  @import url("https://fonts.googleapis.com/css2?family=Dancing+Script&family=Great+Vibes&family=Pacifico&family=Sacramento&family=Allura&family=Alex+Brush&family=Yellowtail&family=Mr+De+Haviland&display=swap");
+
+  .signature-font-1 {
+    font-family: "Dancing Script", cursive;
+  }
+  .signature-font-2 {
+    font-family: "Great Vibes", cursive;
+  }
+  .signature-font-3 {
+    font-family: "Pacifico", cursive;
+  }
+  .signature-font-4 {
+    font-family: "Sacramento", cursive;
+  }
+  .signature-font-5 {
+    font-family: "Allura", cursive;
+  }
+  .signature-font-6 {
+    font-family: "Alex Brush", cursive;
+  }
+  .signature-font-7 {
+    font-family: "Yellowtail", cursive;
+  }
+  .signature-font-8 {
+    font-family: "Mr De Haviland", cursive;
+  }
 }
 

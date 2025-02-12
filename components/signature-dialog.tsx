@@ -5,16 +5,15 @@ import { motion } from "framer-motion"
 import { Progress } from "@/components/ui/progress"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle, Upload, Edit, Type } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Info } from "lucide-react"
 import type { Signature, Document } from "@/lib/mock-db"
 import { Badge } from "@/components/ui/badge"
+import { SignatureGenerator } from "./signature-generator"
+import { CheckCircle } from "lucide-react"
 
 type SignatureDialogProps = {
   signature: Signature | null
@@ -31,6 +30,7 @@ export function SignatureDialog({ signature, document, open, onOpenChange, onUpd
   const [typeSignature, setTypeSignature] = useState("")
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [signatureProgress, setSignatureProgress] = useState(0)
+  const [selectedSignature, setSelectedSignature] = useState<string>("")
 
   const handleUpdate = () => {
     if (signature && document) {
@@ -49,15 +49,13 @@ export function SignatureDialog({ signature, document, open, onOpenChange, onUpd
     }
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setUploadedFile(e.target.files[0])
-    }
+  const handleSignatureSelect = (signatureData: string) => {
+    setSelectedSignature(signatureData)
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[800px]">
         <DialogHeader>
           <DialogTitle>Signature Request</DialogTitle>
           <DialogDescription>Complete the signing process for your document.</DialogDescription>
@@ -74,58 +72,7 @@ export function SignatureDialog({ signature, document, open, onOpenChange, onUpd
                 <CardDescription>Choose how you want to sign the document</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <RadioGroup
-                  value={signatureMethod}
-                  onValueChange={setSignatureMethod}
-                  className="flex flex-col space-y-2"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="upload" id="upload" />
-                    <Label htmlFor="upload" className="flex items-center cursor-pointer">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload a Scanned Signature
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="draw" id="draw" />
-                    <Label htmlFor="draw" className="flex items-center cursor-pointer">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Draw Signature on Screen
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="type" id="type" />
-                    <Label htmlFor="type" className="flex items-center cursor-pointer">
-                      <Type className="h-4 w-4 mr-2" />
-                      Type-to-Sign
-                    </Label>
-                  </div>
-                </RadioGroup>
-                {signatureMethod === "upload" && (
-                  <div>
-                    <Label htmlFor="signatureUpload">Upload Signature</Label>
-                    <Input id="signatureUpload" type="file" accept="image/*" onChange={handleFileUpload} />
-                  </div>
-                )}
-                {signatureMethod === "draw" && (
-                  <div>
-                    <Label>Draw Signature</Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-md h-32 flex items-center justify-center">
-                      Signature Drawing Area (Implement canvas here)
-                    </div>
-                  </div>
-                )}
-                {signatureMethod === "type" && (
-                  <div>
-                    <Label htmlFor="typeSignature">Type Your Signature</Label>
-                    <Input
-                      id="typeSignature"
-                      placeholder="Type your full name"
-                      value={typeSignature}
-                      onChange={(e) => setTypeSignature(e.target.value)}
-                    />
-                  </div>
-                )}
+                <SignatureGenerator onSignatureSelect={handleSignatureSelect} />
                 <div>
                   <Label>Additional Mandatory Signing Method</Label>
                   <Select value={additionalSignMethod} onValueChange={setAdditionalSignMethod}>
@@ -142,7 +89,7 @@ export function SignatureDialog({ signature, document, open, onOpenChange, onUpd
               </CardContent>
               <CardFooter>
                 {!signed ? (
-                  <Button onClick={handleUpdate} disabled={!signatureMethod || !additionalSignMethod}>
+                  <Button onClick={handleUpdate} disabled={!selectedSignature || !additionalSignMethod}>
                     Complete Signing Process
                   </Button>
                 ) : (

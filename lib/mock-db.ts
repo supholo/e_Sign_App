@@ -1,5 +1,57 @@
 import { v4 as uuidv4 } from "uuid"
 
+type Authorizer = {
+  id: string
+  name: string
+  email: string
+  role: string
+  department: string
+}
+
+type CustomizationSettings = {
+  theme: {
+    primaryColor: string
+    secondaryColor: string
+    fontFamily: string
+    darkMode: boolean
+  }
+  branding: {
+    logo: string
+    companyName: string
+    favicon: string
+  }
+  email: {
+    headerImage: string
+    footerText: string
+    signature: string
+  }
+  security: {
+    passwordStrength: number
+    twoFactorAuth: boolean
+    sessionTimeout: number
+  }
+}
+
+type SubscriptionPlan = {
+  id: string
+  name: string
+  price: number
+  features: string[]
+  isActive: boolean
+}
+
+type Department = {
+  id: string
+  name: string
+  description: string
+}
+
+type Role = {
+  id: string
+  name: string
+  permissions: string[]
+}
+
 export type Document = {
   id: string
   name: string
@@ -25,6 +77,7 @@ export type Workflow = {
   createdDate: string
   currentStep: number
   steps: WorkflowStep[]
+  documentId?: string // Added documentId to Workflow
 }
 
 export type WorkflowStep = {
@@ -69,7 +122,7 @@ export type TemplateField = {
 
 export type RecentActivity = {
   id: string
-  type: "document" | "workflow" | "signature" | "user"
+  type: "document" | "workflow" | "signature" | "user" | "template"
   action: string
   itemId: string
   itemName: string
@@ -80,7 +133,7 @@ export type RecentActivity = {
 
 export type AuditLog = {
   id: string
-  type: "document" | "workflow" | "signature" | "user"
+  type: "document" | "workflow" | "signature" | "user" | "template"
   action: string
   itemId: string
   itemName: string
@@ -90,6 +143,48 @@ export type AuditLog = {
   details: string
 }
 
+export type WorkflowCategory = {
+  id: string
+  name: string
+  icon: string
+  workflows: WorkflowTemplate[]
+}
+
+export type WorkflowTemplate = {
+  id: string
+  name: string
+  description: string
+  categoryId: string // Changed from 'category' to 'categoryId'
+  steps: WorkflowStep[]
+  isTemplate: boolean
+  createdAt: string
+  updatedAt: string
+  createdBy: string
+  status: "active" | "draft" | "archived"
+}
+
+export type Category = {
+  id: string
+  name: string
+  icon: string
+}
+
+export type FlexiformTemplate = Template & {
+  type: "flexiform"
+  fields: FlexiformTemplateField[]
+}
+
+export type FlexiformTemplateField = TemplateField & {
+  options?: string[]
+}
+
+export type SavedSignature = {
+  id: string
+  name: string
+  data: string
+  createdAt: string
+}
+
 class MockDatabase {
   documents: Document[] = []
   workflows: Workflow[] = []
@@ -97,9 +192,66 @@ class MockDatabase {
   templates: Template[] = []
   recentActivities: RecentActivity[] = []
   auditLogs: AuditLog[] = []
+  categories: Category[] = []
+  workflowTemplates: WorkflowTemplate[] = []
+  subscriptionPlans: SubscriptionPlan[] = []
+  departments: Department[] = []
+  roles: Role[] = []
+  authorizers: Authorizer[] = []
+  customizationSettings: CustomizationSettings = {
+    theme: { primaryColor: "#000000", secondaryColor: "#ffffff", fontFamily: "Arial", darkMode: false },
+    branding: { logo: "", companyName: "", favicon: "" },
+    email: { headerImage: "", footerText: "", signature: "" },
+    security: { passwordStrength: 8, twoFactorAuth: false, sessionTimeout: 30 },
+  }
+  private savedSignatures: SavedSignature[] = []
 
   constructor() {
     this.initializeData()
+
+    // Initialize subscription plans
+    this.subscriptionPlans = [
+      { id: "basic", name: "Basic", price: 9.99, features: ["10 documents/month", "Basic support"], isActive: false },
+      {
+        id: "pro",
+        name: "Pro",
+        price: 19.99,
+        features: ["Unlimited documents", "Priority support", "Advanced analytics"],
+        isActive: true,
+      },
+      {
+        id: "enterprise",
+        name: "Enterprise",
+        price: 49.99,
+        features: ["Unlimited documents", "24/7 support", "Custom integrations", "Dedicated account manager"],
+        isActive: false,
+      },
+    ]
+
+    // Initialize departments
+    this.departments = [
+      { id: uuidv4(), name: "Human Resources", description: "Manages employee-related processes" },
+      { id: uuidv4(), name: "Finance", description: "Handles financial operations and reporting" },
+      { id: uuidv4(), name: "Legal", description: "Oversees legal matters and compliance" },
+    ]
+
+    // Initialize roles
+    this.roles = [
+      {
+        id: uuidv4(),
+        name: "Admin",
+        permissions: [
+          "create_document",
+          "edit_document",
+          "delete_document",
+          "manage_users",
+          "manage_workflows",
+          "view_reports",
+        ],
+      },
+      { id: uuidv4(), name: "Manager", permissions: ["create_document", "edit_document", "view_reports"] },
+      { id: uuidv4(), name: "User", permissions: ["create_document", "edit_document"] },
+    ]
   }
 
   private initializeData() {
@@ -186,6 +338,134 @@ class MockDatabase {
             assignee: { name: "David Wilson", email: "david@example.com", avatar: "/placeholder-avatar.jpg" },
           },
         ],
+      },
+    ]
+
+    // Initialize categories
+    this.categories = [
+      { id: "hr", name: "Human Resources", icon: "Users" },
+      { id: "legal", name: "Legal", icon: "Scale" },
+      { id: "finance", name: "Finance", icon: "DollarSign" },
+      { id: "system", name: "System", icon: "Settings" },
+    ]
+
+    this.categories = [
+      {
+        id: "hr",
+        name: "Human Resources",
+        icon: "Users",
+        workflows: [
+          {
+            id: "onboarding",
+            name: "Sample Workflow - Onboarding",
+            description: "Employee onboarding process workflow",
+            categoryId: "hr",
+            steps: [
+              {
+                name: "Offer Letter",
+                status: "pending",
+                icon: "FileText",
+                role: "HR Manager",
+              },
+              {
+                name: "Appraisal Letter",
+                status: "pending",
+                icon: "FileCheck",
+                role: "HR Manager",
+              },
+              {
+                name: "Termination Letter",
+                status: "pending",
+                icon: "FileX",
+                role: "HR Director",
+              },
+            ],
+            isTemplate: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            createdBy: "system",
+            status: "active",
+          },
+        ],
+      },
+      {
+        id: "legal",
+        name: "Legal",
+        icon: "Scale",
+        workflows: [],
+      },
+      {
+        id: "finance",
+        name: "Finance",
+        icon: "DollarSign",
+        workflows: [
+          {
+            id: "purchase-order",
+            name: "Sample Workflow - Purchase Order",
+            description: "Purchase order approval workflow",
+            categoryId: "finance",
+            steps: [
+              {
+                name: "Purchase Order",
+                status: "pending",
+                icon: "FileText",
+                role: "Finance Manager",
+              },
+            ],
+            isTemplate: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            createdBy: "system",
+            status: "active",
+          },
+        ],
+      },
+      {
+        id: "system",
+        name: "System",
+        icon: "Settings",
+        workflows: [],
+      },
+    ]
+
+    // Update the default workflow to use the system category
+    this.workflowTemplates = [
+      {
+        id: uuidv4(),
+        name: "Default Approval Workflow",
+        description: "System default approval workflow",
+        categoryId: "system",
+        steps: [
+          {
+            name: "Draft",
+            status: "pending",
+            icon: "FileText",
+            role: "Approver",
+          },
+          {
+            name: "Review",
+            status: "pending",
+            icon: "Eye",
+            role: "Reviewer",
+          },
+          {
+            name: "Approve",
+            status: "pending",
+            icon: "UserCheck",
+            role: "Approver",
+          },
+          {
+            name: "Sign",
+            status: "pending",
+            icon: "CheckCircle",
+            role: "Signer",
+          },
+        ],
+        isTemplate: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: "system",
+        status: "active",
       },
     ]
   }
@@ -457,19 +737,37 @@ class MockDatabase {
   }
 
   addDocumentToWorkflow(documentId: string, workflowId: string): Document | undefined {
+    console.log("mockDb.addDocumentToWorkflow called with:", documentId, workflowId)
     const documentIndex = this.documents.findIndex((doc) => doc.id === documentId)
-    const workflow = this.workflows.find((wf) => wf.id === workflowId)
+    const workflowTemplate = this.workflowTemplates.find((wf) => wf.id === workflowId)
 
-    if (documentIndex !== -1 && workflow) {
-      this.documents[documentIndex].workflowId = workflowId
-      this.documents[documentIndex].status = "In Workflow"
-      this.documents[documentIndex].currentStep = 0
-      workflow.steps[0].status = "current"
+    if (documentIndex !== -1 && workflowTemplate) {
+      // Create a new workflow instance based on the template
+      const newWorkflow: Workflow = {
+        id: uuidv4(),
+        name: workflowTemplate.name,
+        status: "Active",
+        creator: "Current User",
+        createdDate: new Date().toISOString(),
+        currentStep: 0,
+        steps: workflowTemplate.steps.map((step) => ({ ...step, status: "pending" })),
+        documentId: documentId,
+      }
+      this.workflows.push(newWorkflow)
+
+      const updatedDocument = {
+        ...this.documents[documentIndex],
+        workflowId: newWorkflow.id,
+        status: "In Workflow",
+        currentStep: 0,
+      }
+      this.documents[documentIndex] = updatedDocument
+
       this.addRecentActivity({
         type: "document",
         action: "added_to_workflow",
         itemId: documentId,
-        itemName: this.documents[documentIndex].name,
+        itemName: updatedDocument.name,
         userId: "current-user-id",
         userName: "Current User",
       })
@@ -477,14 +775,16 @@ class MockDatabase {
         type: "document",
         action: "added_to_workflow",
         itemId: documentId,
-        itemName: this.documents[documentIndex].name,
+        itemName: updatedDocument.name,
         userId: "current-user-id",
         userName: "Current User",
-        details: JSON.stringify({ documentId, workflowId }),
+        details: JSON.stringify({ documentId, workflowId: newWorkflow.id }),
       })
-      return this.documents[documentIndex]
+      console.log("Document updated in mockDb:", updatedDocument)
+      return updatedDocument
     }
 
+    console.error("Failed to add document to workflow in mockDb")
     return undefined
   }
 
@@ -656,6 +956,301 @@ class MockDatabase {
 
   getAuditLogs(): AuditLog[] {
     return this.auditLogs
+  }
+
+  // Add new methods for workflow management
+  getWorkflowCategories(): WorkflowCategory[] {
+    return this.categories
+  }
+
+  getWorkflowCategory(id: string): WorkflowCategory | undefined {
+    return this.categories.find((category) => category.id === id)
+  }
+
+  addWorkflowTemplate(
+    categoryId: string,
+    template: Omit<WorkflowTemplate, "id" | "createdAt" | "updatedAt">,
+  ): WorkflowTemplate | undefined {
+    const category = this.categories.find((c) => c.id === categoryId)
+    if (!category) return undefined
+
+    const newTemplate: WorkflowTemplate = {
+      ...template,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: "current-user-id",
+      isTemplate: true,
+      status: "active",
+    }
+
+    category.workflows.push(newTemplate)
+    return newTemplate
+  }
+
+  updateWorkflowTemplate(
+    categoryId: string,
+    templateId: string,
+    updates: Partial<WorkflowTemplate>,
+  ): WorkflowTemplate | undefined {
+    const category = this.categories.find((c) => c.id === categoryId)
+    if (!category) return undefined
+
+    const index = category.workflows.findIndex((w) => w.id === templateId)
+    if (index === -1) return undefined
+
+    category.workflows[index] = {
+      ...category.workflows[index],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    }
+
+    return category.workflows[index]
+  }
+
+  deleteWorkflowTemplate(categoryId: string, templateId: string): boolean {
+    const category = this.categories.find((c) => c.id === categoryId)
+    if (!category) return false
+
+    const initialLength = category.workflows.length
+    category.workflows = category.workflows.filter((w) => w.id !== templateId)
+    return category.workflows.length < initialLength
+  }
+
+  searchWorkflows(query: string): WorkflowTemplate[] {
+    const results: WorkflowTemplate[] = []
+    this.categories.forEach((category) => {
+      const matches = category.workflows.filter(
+        (workflow) =>
+          workflow.name.toLowerCase().includes(query.toLowerCase()) ||
+          workflow.description.toLowerCase().includes(query.toLowerCase()),
+      )
+      results.push(...matches)
+    })
+    return results
+  }
+
+  // Add methods for category management
+  getCategories(): Category[] {
+    return this.categories
+  }
+
+  getCategoryById(id: string): Category | undefined {
+    return this.categories.find((category) => category.id === id)
+  }
+
+  addCategory(category: Omit<Category, "id">): Category {
+    const newCategory = { ...category, id: uuidv4() }
+    this.categories.push(newCategory)
+    return newCategory
+  }
+
+  updateCategory(id: string, updates: Partial<Category>): Category | undefined {
+    const index = this.categories.findIndex((category) => category.id === id)
+    if (index !== -1) {
+      this.categories[index] = { ...this.categories[index], ...updates }
+      return this.categories[index]
+    }
+    return undefined
+  }
+
+  deleteCategory(id: string): boolean {
+    const initialLength = this.categories.length
+    this.categories = this.categories.filter((category) => category.id !== id)
+    return this.categories.length < initialLength
+  }
+
+  getWorkflowTemplates(): WorkflowTemplate[] {
+    return this.workflowTemplates
+  }
+
+  getWorkflowTemplateById(id: string): WorkflowTemplate | undefined {
+    return this.workflowTemplates.find((template) => template.id === id)
+  }
+
+  addWorkflowTemplate(template: Omit<WorkflowTemplate, "id" | "createdAt" | "updatedAt">): WorkflowTemplate {
+    const newTemplate: WorkflowTemplate = {
+      ...template,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: "current-user-id",
+      isTemplate: true,
+      status: "active",
+    }
+    this.workflowTemplates.push(newTemplate)
+
+    // Also add the new workflow to the appropriate category
+    const category = this.categories.find((c) => c.id === template.categoryId)
+    if (category) {
+      category.workflows.push(newTemplate)
+    }
+
+    return newTemplate
+  }
+
+  updateWorkflowTemplate(id: string, updates: Partial<WorkflowTemplate>): WorkflowTemplate | undefined {
+    const index = this.workflowTemplates.findIndex((template) => template.id === id)
+    if (index !== -1) {
+      this.workflowTemplates[index] = {
+        ...this.workflowTemplates[index],
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      }
+      return this.workflowTemplates[index]
+    }
+    return undefined
+  }
+
+  deleteWorkflowTemplate(id: string): boolean {
+    const initialLength = this.workflowTemplates.length
+    this.workflowTemplates = this.workflowTemplates.filter((template) => template.id !== id)
+    return this.workflowTemplates.length < initialLength
+  }
+
+  // Subscription methods
+  getSubscriptionPlans(): SubscriptionPlan[] {
+    return this.subscriptionPlans
+  }
+
+  updateSubscription(planId: string): SubscriptionPlan {
+    const plan = this.subscriptionPlans.find((p) => p.id === planId)
+    if (!plan) throw new Error("Plan not found")
+    this.subscriptionPlans = this.subscriptionPlans.map((p) => ({ ...p, isActive: p.id === planId }))
+    return { ...plan, isActive: true }
+  }
+
+  // Department  // Department methods
+  getDepartments(): Department[] {
+    return this.departments
+  }
+
+  createDepartment(department: Omit<Department, "id">): Department {
+    const newDepartment = { ...department, id: uuidv4() }
+    this.departments.push(newDepartment)
+    return newDepartment
+  }
+
+  updateDepartment(id: string, updates: Partial<Department>): Department {
+    const index = this.departments.findIndex((d) => d.id === id)
+    if (index === -1) throw new Error("Department not found")
+    this.departments[index] = { ...this.departments[index], ...updates }
+    return this.departments[index]
+  }
+
+  deleteDepartment(id: string): void {
+    this.departments = this.departments.filter((d) => d.id !== id)
+  }
+
+  // Role methods
+  getRoles(): Role[] {
+    return this.roles
+  }
+
+  createRole(role: Omit<Role, "id">): Role {
+    const newRole = { ...role, id: uuidv4() }
+    this.roles.push(newRole)
+    return newRole
+  }
+
+  updateRole(id: string, updates: Partial<Role>): Role {
+    const index = this.roles.findIndex((r) => r.id === id)
+    if (index === -1) throw new Error("Role not found")
+    this.roles[index] = { ...this.roles[index], ...updates }
+    return this.roles[index]
+  }
+
+  deleteRole(id: string): void {
+    this.roles = this.roles.filter((r) => r.id !== id)
+  }
+
+  getAuthorizers(): Authorizer[] {
+    return this.authorizers
+  }
+
+  createAuthorizer(authorizer: Omit<Authorizer, "id">): Authorizer {
+    const newAuthorizer = { ...authorizer, id: uuidv4() }
+    this.authorizers.push(newAuthorizer)
+    return newAuthorizer
+  }
+
+  updateAuthorizer(id: string, updates: Partial<Authorizer>): Authorizer {
+    const index = this.authorizers.findIndex((a) => a.id === id)
+    if (index === -1) throw new Error("Authorizer not found")
+    this.authorizers[index] = { ...this.authorizers[index], ...updates }
+    return this.authorizers[index]
+  }
+
+  deleteAuthorizer(id: string): void {
+    this.authorizers = this.authorizers.filter((a) => a.id !== id)
+  }
+
+  getCustomizationSettings(): CustomizationSettings {
+    return this.customizationSettings
+  }
+
+  updateCustomizationSettings(settings: CustomizationSettings): void {
+    this.customizationSettings = settings
+  }
+
+  createFlexiformTemplate(template: Omit<FlexiformTemplate, "id" | "createdAt">): FlexiformTemplate {
+    const newTemplate: FlexiformTemplate = {
+      ...template,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+    }
+
+    this.templates.push(newTemplate)
+
+    this.addRecentActivity({
+      type: "template",
+      action: "created",
+      itemId: newTemplate.id,
+      itemName: newTemplate.name,
+      userId: "current-user-id",
+      userName: "Current User",
+    })
+
+    return newTemplate
+  }
+
+  getFlexiformTemplates(): FlexiformTemplate[] {
+    return this.templates.filter((template): template is FlexiformTemplate => template.type === "flexiform")
+  }
+
+  updateFlexiformTemplate(id: string, updates: Partial<FlexiformTemplate>): FlexiformTemplate | undefined {
+    const index = this.templates.findIndex((template) => template.id === id && template.type === "flexiform")
+    if (index !== -1) {
+      this.templates[index] = { ...this.templates[index], ...updates }
+      return this.templates[index] as FlexiformTemplate
+    }
+    return undefined
+  }
+
+  deleteFlexiformTemplate(id: string): boolean {
+    const initialLength = this.templates.length
+    this.templates = this.templates.filter((template) => !(template.id === id && template.type === "flexiform"))
+    return this.templates.length < initialLength
+  }
+
+  getSavedSignatures(): SavedSignature[] {
+    return this.savedSignatures
+  }
+
+  saveSignature(signature: Omit<SavedSignature, "id" | "createdAt">): SavedSignature {
+    const newSignature: SavedSignature = {
+      ...signature,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+    }
+    this.savedSignatures.push(newSignature)
+    return newSignature
+  }
+
+  deleteSavedSignature(id: string): boolean {
+    const initialLength = this.savedSignatures.length
+    this.savedSignatures = this.savedSignatures.filter((sig) => sig.id !== id)
+    return this.savedSignatures.length < initialLength
   }
 }
 

@@ -20,16 +20,88 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
 import dynamic from "next/dynamic"
-import { mockDb, type Document, type Workflow } from "@/lib/mock-db"
+import { mockDb, type Document, type Workflow, type WorkflowTemplate, type Category } from "@/lib/mock-db"
 
 const PDFViewer = dynamic(() => import("@/components/pdf-viewer"), { ssr: false })
+
+function AddToWorkflowDialog({ open, onOpenChange, onAddToWorkflow, document }) {
+  const [categories, setCategories] = useState<Category[]>([])
+  const [workflows, setWorkflows] = useState<WorkflowTemplate[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>("")
+  const [selectedWorkflow, setSelectedWorkflow] = useState<string>("")
+
+  useEffect(() => {
+    setCategories(mockDb.getCategories())
+    setWorkflows(mockDb.getWorkflowTemplates())
+  }, [])
+
+  const filteredWorkflows = selectedCategory
+    ? workflows.filter((workflow) => workflow.categoryId === selectedCategory)
+    : []
+
+  const handleAddToWorkflow = () => {
+    if (selectedWorkflow && document) {
+      console.log("Dialog: handleAddToWorkflow called with:", document.id, selectedWorkflow)
+      onAddToWorkflow(document.id, selectedWorkflow)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add to Workflow</DialogTitle>
+          <DialogDescription>Select a category and workflow to add this document to.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="category" className="text-right">
+              Category
+            </Label>
+            <Select onValueChange={setSelectedCategory} value={selectedCategory}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="workflow" className="text-right">
+              Workflow
+            </Label>
+            <Select onValueChange={setSelectedWorkflow} value={selectedWorkflow}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a workflow" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredWorkflows.map((workflow) => (
+                  <SelectItem key={workflow.id} value={workflow.id}>
+                    {workflow.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={handleAddToWorkflow}>Add to Workflow</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export default function Documents() {
   const [searchTerm, setSearchTerm] = useState("")
   const [documents, setDocuments] = useState<Document[]>([])
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
-  const [selectedWorkflow, setSelectedWorkflow] = useState<string>("")
   const [showAddToWorkflowDialog, setShowAddToWorkflowDialog] = useState(false)
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const [showPreviewDialog, setShowPreviewDialog] = useState(false)
@@ -57,19 +129,31 @@ export default function Documents() {
       doc.uploadedBy.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleAddToWorkflow = () => {
-    if (selectedDocument && selectedWorkflow) {
-      const updatedDocument = mockDb.addDocumentToWorkflow(selectedDocument.id, selectedWorkflow)
+  const handleAddToWorkflow = (documentId: string, workflowId: string) => {
+    console.log("handleAddToWorkflow called with:", documentId, workflowId)
+    try {
+      const updatedDocument = mockDb.addDocumentToWorkflow(documentId, workflowId)
       if (updatedDocument) {
-        setDocuments(mockDb.getDocuments())
+        console.log("Document updated:", updatedDocument)
+        setDocuments((prevDocuments) =>
+          prevDocuments.map((doc) => (doc.id === updatedDocument.id ? updatedDocument : doc)),
+        )
         setShowAddToWorkflowDialog(false)
         setSelectedDocument(null)
-        setSelectedWorkflow("")
         toast({
-          title: "Document added to workflow",
+          title: "Success",
           description: `${updatedDocument.name} has been added to the workflow.`,
         })
+      } else {
+        throw new Error("Failed to update document")
       }
+    } catch (error) {
+      console.error("Error in handleAddToWorkflow:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add document to workflow. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -210,36 +294,12 @@ export default function Documents() {
           </CardContent>
         </Card>
       </div>
-      <Dialog open={showAddToWorkflowDialog} onOpenChange={setShowAddToWorkflowDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add to Workflow</DialogTitle>
-            <DialogDescription>Select a workflow to add this document to.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="workflow" className="text-right">
-                Workflow
-              </Label>
-              <Select onValueChange={setSelectedWorkflow} value={selectedWorkflow}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a workflow" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workflows.map((workflow) => (
-                    <SelectItem key={workflow.id} value={workflow.id.toString()}>
-                      {workflow.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={handleAddToWorkflow}>Add to Workflow</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddToWorkflowDialog
+        open={showAddToWorkflowDialog}
+        onOpenChange={setShowAddToWorkflowDialog}
+        onAddToWorkflow={handleAddToWorkflow}
+        document={selectedDocument}
+      />
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
         <DialogContent>
           <DialogHeader>

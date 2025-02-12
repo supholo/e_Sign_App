@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Layout } from "@/components/layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -54,9 +55,16 @@ export default function Templates() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Document Templates</h1>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> Create Template
-          </Button>
+          <div className="flex space-x-2">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" /> Create Template
+            </Button>
+            <Button asChild>
+              <Link href="/templates/create-flexiform">
+                <Plus className="mr-2 h-4 w-4" /> Create Flexiform
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
