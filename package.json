@@ -66,6 +66,7 @@
     "@dnd-kit/core": "latest",
     "react-pdf": "latest",
     "classnames": "latest",
+    "react-quill": "latest",
     "uuid": "latest"
   },
   "devDependencies": {

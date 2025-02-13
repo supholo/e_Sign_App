@@ -13,19 +13,16 @@ import {
   Users,
   GitBranch,
   Shield,
-  Mail,
   Activity,
   FileText,
   BadgeIcon as Certificate,
   Key,
   Paintbrush,
-  LayoutDashboard,
-  Receipt,
-  Star,
   Building2,
   UserCog,
   Sliders,
   FileJson,
+  MailOpenIcon as Envelope,
 } from "lucide-react"
 
 const adminSettings = [
@@ -36,7 +33,7 @@ const adminSettings = [
   { icon: Shield, label: "Access Management", href: "/settings/access" },
   { icon: UserCog, label: "Manage Authorizer", href: "/settings/authorizer" },
   { icon: Paintbrush, label: "Customization", href: "/settings/customization" },
-  { icon: Mail, label: "Email Templates", href: "/settings/email-templates" },
+  { icon: Envelope, label: "Email Templates", href: "/settings/email-templates" },
   { icon: Activity, label: "Activity Log", href: "/settings/activity-log" },
   { icon: FileText, label: "Custom Fields", href: "/settings/custom-fields" },
   { icon: Sliders, label: "Advanced Settings", href: "/settings/advanced" },
@@ -44,12 +41,6 @@ const adminSettings = [
   { icon: Certificate, label: "Certificate Settings", href: "/settings/certificate" },
   { icon: Key, label: "DSC Settings", href: "/settings/dsc" },
   { icon: Paintbrush, label: "Branding Settings", href: "/settings/branding" },
-]
-
-const gatewaySettings = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/settings/gateway-dashboard" },
-  { icon: Receipt, label: "Transaction Log", href: "/settings/transaction-log" },
-  { icon: Star, label: "DSC Branding", href: "/settings/dsc-branding" },
 ]
 
 export default function Settings() {
@@ -62,11 +53,10 @@ export default function Settings() {
       <div className="space-y-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
         <Tabs defaultValue="account" className="w-full">
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="account">Account</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="admin">Admin Settings</TabsTrigger>
-            <TabsTrigger value="gateway">Gateway Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="account">
@@ -131,31 +121,6 @@ export default function Settings() {
                       className="hover:bg-accent transition-colors cursor-pointer"
                       onClick={() => router.push(setting.href)}
                     >
-                      <CardContent className="p-4 flex items-center space-x-4">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <setting.icon className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">{setting.label}</h3>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="gateway">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gateway Settings</CardTitle>
-                <CardDescription>Configure payment and transaction settings.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {gatewaySettings.map((setting) => (
-                    <Card key={setting.href} className="hover:bg-accent transition-colors cursor-pointer">
                       <CardContent className="p-4 flex items-center space-x-4">
                         <div className="p-2 bg-primary/10 rounded-lg">
                           <setting.icon className="h-5 w-5 text-primary" />
