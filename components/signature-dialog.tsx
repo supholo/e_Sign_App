@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Info } from "lucide-react"
-import type { Signature, Document } from "@/lib/mock-db"
+import type { Signature, Document } from "@/lib/models/signature"
 import { Badge } from "@/components/ui/badge"
 import { SignatureGenerator } from "./signature-generator"
 import { CheckCircle } from "lucide-react"

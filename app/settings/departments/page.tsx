@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Layout } from "@/components/layout"
 import { Button } from "@/components/ui/button"
@@ -7,32 +9,45 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { mockDb } from "@/lib/mock-db"
-import { toast } from "@/components/ui/use-toast"
-
-type Department = {
-  id: string
-  name: string
-  description: string
-}
+import { settingsApi } from "@/lib/api/settingsApi"
+import { useToast } from "@/components/ui/use-toast"
+import { useAuth } from "@/hooks/useAuth"
+import { Loading } from "@/components/loading"
+import type { Department } from "@/lib/models/settings"
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [newDepartment, setNewDepartment] = useState({ name: "", description: "" })
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
+  const { user } = useAuth()
 
   useEffect(() => {
     const fetchDepartments = async () => {
-      const fetchedDepartments = await mockDb.getDepartments()
-      setDepartments(fetchedDepartments)
+      if (!user) return
+      try {
+        setIsLoading(true)
+        const fetchedDepartments = await settingsApi.getDepartments()
+        setDepartments(fetchedDepartments)
+      } catch (error) {
+        console.error("Error fetching departments:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch departments. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
     fetchDepartments()
-  }, [])
+  }, [user, toast])
 
   const handleCreateDepartment = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const createdDepartment = await mockDb.createDepartment(newDepartment)
+      const createdDepartment = await settingsApi.createDepartment(newDepartment)
       setDepartments([...departments, createdDepartment])
       setNewDepartment({ name: "", description: "" })
       toast({
@@ -40,6 +55,7 @@ export default function DepartmentsPage() {
         description: `${createdDepartment.name} has been created successfully.`,
       })
     } catch (error) {
+      console.error("Error creating department:", error)
       toast({
         title: "Error",
         description: "Failed to create department. Please try again.",
@@ -52,7 +68,7 @@ export default function DepartmentsPage() {
     e.preventDefault()
     if (!editingDepartment) return
     try {
-      const updatedDepartment = await mockDb.updateDepartment(editingDepartment.id, editingDepartment)
+      const updatedDepartment = await settingsApi.updateDepartment(editingDepartment.id, editingDepartment)
       setDepartments(departments.map((dept) => (dept.id === updatedDepartment.id ? updatedDepartment : dept)))
       setEditingDepartment(null)
       toast({
@@ -60,6 +76,7 @@ export default function DepartmentsPage() {
         description: `${updatedDepartment.name} has been updated successfully.`,
       })
     } catch (error) {
+      console.error("Error updating department:", error)
       toast({
         title: "Error",
         description: "Failed to update department. Please try again.",
@@ -70,19 +87,28 @@ export default function DepartmentsPage() {
 
   const handleDeleteDepartment = async (id: string) => {
     try {
-      await mockDb.deleteDepartment(id)
+      await settingsApi.deleteDepartment(id)
       setDepartments(departments.filter((dept) => dept.id !== id))
       toast({
         title: "Department Deleted",
         description: "The department has been deleted successfully.",
       })
     } catch (error) {
+      console.error("Error deleting department:", error)
       toast({
         title: "Error",
         description: "Failed to delete department. Please try again.",
         variant: "destructive",
       })
     }
+  }
+
+  if (isLoading) {
+    return <Loading />
+  }
+
+  if (!user) {
+    return null // The Layout component will handle redirection
   }
 
   return (

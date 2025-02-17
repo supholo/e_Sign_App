@@ -1,10 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { FileText, Search, Eye, Send, Plus, Trash2 } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { FileText, Search, Eye, Trash2, Upload, Download, Plus } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -12,145 +16,179 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { mockDb, type Document } from "@/lib/mock-db"
+import { toast } from "@/components/ui/use-toast"
+import { documentsApi } from "@/lib/api/documentsApi"
+import type { Document } from "@/lib/models/document"
+import AddToWorkflowDialog from "@/components/add-to-workflow-dialog"
+import { useAuth } from "@/hooks/useAuth"
 
-export function DocumentList() {
+interface DocumentListProps {
+  documents: Document[]
+  setDocuments: React.Dispatch<React.SetStateAction<Document[]>>
+}
+
+export function DocumentList({ documents, setDocuments }: DocumentListProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [showUploadModal, setShowUploadModal] = useState(false)
-  const [documents, setDocuments] = useState<Document[]>([])
+  const [showUploadDialog, setShowUploadDialog] = useState(false)
   const [newDocumentName, setNewDocumentName] = useState("")
   const [newDocumentFile, setNewDocumentFile] = useState<File | null>(null)
+  const [newAccountNumber, setNewAccountNumber] = useState("")
+  const [newBranchName, setNewBranchName] = useState("")
+  const [newCustomerName, setNewCustomerName] = useState("")
+  const [newDocumentType, setNewDocumentType] = useState("")
+  const [newAmount, setNewAmount] = useState("")
+  const [showAddToWorkflowDialog, setShowAddToWorkflowDialog] = useState(false)
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
+  const { user } = useAuth()
 
-  useEffect(() => {
-    const fetchDocuments = () => {
-      setDocuments(mockDb.getDocuments())
-    }
+  const filteredDocuments = documents.filter(
+    (doc) =>
+      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.uploadedBy.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
 
-    fetchDocuments()
-    const intervalId = setInterval(fetchDocuments, 5000)
-    return () => clearInterval(intervalId)
-  }, [])
-
-  const filteredDocuments = documents.filter((doc) => doc.name.toLowerCase().includes(searchTerm.toLowerCase()))
-
-  const handleUpload = (e: React.FormEvent) => {
+  const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault()
     if (newDocumentName && newDocumentFile) {
-      const newDocument = mockDb.addDocument({
-        name: newDocumentName,
-        status: "Draft",
-        uploadedBy: "Current User",
-        date: new Date().toISOString().split("T")[0],
-        size: `${(newDocumentFile.size / 1024 / 1024).toFixed(2)} MB`,
-        url: URL.createObjectURL(newDocumentFile),
-        accountNumber: "N/A",
-        branchName: "N/A",
-        customerName: "N/A",
-        documentType: "N/A",
-        amount: 0,
-      })
-      setDocuments([...documents, newDocument])
-      setShowUploadModal(false)
-      setNewDocumentName("")
-      setNewDocumentFile(null)
+      try {
+        const newDocument = await documentsApi.addDocument({
+          name: newDocumentName,
+          status: "Draft",
+          uploadedBy: "Current User",
+          date: new Date().toISOString().split("T")[0],
+          size: `${(newDocumentFile.size / 1024 / 1024).toFixed(2)} MB`,
+          url: URL.createObjectURL(newDocumentFile), // This would be different for a real API
+          accountNumber: newAccountNumber,
+          branchName: newBranchName,
+          customerName: newCustomerName,
+          documentType: newDocumentType,
+          amount: Number.parseFloat(newAmount),
+        })
+
+        setDocuments([...documents, newDocument])
+        setShowUploadDialog(false)
+        resetForm()
+        toast({
+          title: "Document uploaded",
+          description: `${newDocumentName} has been successfully uploaded.`,
+        })
+      } catch (error) {
+        console.error("Error uploading document:", error)
+        toast({
+          title: "Error",
+          description: "Failed to upload document. Please try again.",
+          variant: "destructive",
+        })
+      }
     }
   }
 
-  const handleDelete = (id: string) => {
-    if (mockDb.deleteDocument(id)) {
-      setDocuments(documents.filter((doc) => doc.id !== id))
+  const handleDelete = async (id: string) => {
+    try {
+      const success = await documentsApi.deleteDocument(id)
+      if (success) {
+        setDocuments(documents.filter((doc) => doc.id !== id))
+        toast({
+          title: "Document deleted",
+          description: "The document has been successfully deleted.",
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting document:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete document. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const resetForm = () => {
+    setNewDocumentName("")
+    setNewDocumentFile(null)
+    setNewAccountNumber("")
+    setNewBranchName("")
+    setNewCustomerName("")
+    setNewDocumentType("")
+    setNewAmount("")
+  }
+
+  const handleAddToWorkflow = async (documentId: string, workflowId: string) => {
+    try {
+      const updatedDocument = await documentsApi.addDocumentToWorkflow(documentId, workflowId)
+      if (updatedDocument) {
+        setDocuments((prevDocuments) =>
+          prevDocuments.map((doc) => (doc.id === updatedDocument.id ? updatedDocument : doc)),
+        )
+        setShowAddToWorkflowDialog(false)
+        setSelectedDocument(null)
+        toast({
+          title: "Success",
+          description: `${updatedDocument.name} has been added to the workflow.`,
+        })
+      }
+    } catch (error) {
+      console.error("Error adding document to workflow:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add document to workflow. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Documents</h1>
-        <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Upload Document
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Upload Document</DialogTitle>
-              <DialogDescription>Upload a new document to the system.</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleUpload}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Name
-                  </Label>
-                  <Input
-                    id="name"
-                    value={newDocumentName}
-                    onChange={(e) => setNewDocumentName(e.target.value)}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="file" className="text-right">
-                    File
-                  </Label>
-                  <Input
-                    id="file"
-                    type="file"
-                    onChange={(e) => setNewDocumentFile(e.target.files ? e.target.files[0] : null)}
-                    className="col-span-3"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">Upload</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-      <div className="flex items-center space-x-2">
-        <Search className="h-5 w-5 text-muted-foreground" />
-        <Input
-          placeholder="Search documents..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-        />
+        <div className="flex items-center space-x-2">
+          <Search className="h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Search documents..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+        </div>
+        <Button onClick={() => setShowUploadDialog(true)}>
+          <Upload className="mr-2 h-4 w-4" />
+          Upload Document
+        </Button>
       </div>
       <Card>
+        <CardHeader>
+          <CardTitle>All Documents</CardTitle>
+          <CardDescription>A list of all documents in the system.</CardDescription>
+        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Document</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Uploaded By</TableHead>
+                <TableHead>Account Number</TableHead>
+                <TableHead>Branch Name</TableHead>
+                <TableHead>Customer Name</TableHead>
+                <TableHead>Document Type</TableHead>
+                <TableHead>Amount</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredDocuments.map((doc, index) => (
-                <TableRow key={doc.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <FileText className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <div className="font-medium">{doc.name}</div>
-                        <div className="text-sm text-muted-foreground">{doc.date}</div>
-                      </div>
+              {filteredDocuments.map((doc) => (
+                <TableRow key={doc.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center">
+                      <FileText className="h-5 w-5 mr-2 text-muted-foreground" />
+                      {doc.name}
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant={
                         doc.status === "Signed"
-                          ? "default"
+                          ? "success"
                           : doc.status === "Pending for Sign"
                             ? "warning"
                             : doc.status === "In Workflow"
@@ -161,16 +199,36 @@ export function DocumentList() {
                       {doc.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{doc.uploadedBy}</TableCell>
+                  <TableCell>{doc.accountNumber}</TableCell>
+                  <TableCell>{doc.branchName}</TableCell>
+                  <TableCell>{doc.customerName}</TableCell>
+                  <TableCell>{doc.documentType}</TableCell>
+                  <TableCell>{doc.amount.toLocaleString("en-US", { style: "currency", currency: "USD" })}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button variant="ghost" size="icon">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon">
-                        <Send className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" disabled={doc.status !== "Signed"}>
+                        <Download className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(doc.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedDocument(doc)
+                          setShowAddToWorkflowDialog(true)
+                        }}
+                        disabled={doc.status === "In Workflow" || doc.status === "Signed"}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(doc.id)}
+                        disabled={doc.status === "In Workflow" || doc.status === "Signed"}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -181,6 +239,107 @@ export function DocumentList() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Document</DialogTitle>
+            <DialogDescription>Upload a new document to the system.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpload}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="documentName" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="documentName"
+                  value={newDocumentName}
+                  onChange={(e) => setNewDocumentName(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="documentFile" className="text-right">
+                  File
+                </Label>
+                <Input
+                  id="documentFile"
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setNewDocumentFile(e.target.files ? e.target.files[0] : null)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="accountNumber" className="text-right">
+                  Account Number
+                </Label>
+                <Input
+                  id="accountNumber"
+                  value={newAccountNumber}
+                  onChange={(e) => setNewAccountNumber(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="branchName" className="text-right">
+                  Branch Name
+                </Label>
+                <Input
+                  id="branchName"
+                  value={newBranchName}
+                  onChange={(e) => setNewBranchName(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="customerName" className="text-right">
+                  Customer Name
+                </Label>
+                <Input
+                  id="customerName"
+                  value={newCustomerName}
+                  onChange={(e) => setNewCustomerName(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="documentType" className="text-right">
+                  Document Type
+                </Label>
+                <Input
+                  id="documentType"
+                  value={newDocumentType}
+                  onChange={(e) => setNewDocumentType(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="amount" className="text-right">
+                  Amount
+                </Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  value={newAmount}
+                  onChange={(e) => setNewAmount(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Upload</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <AddToWorkflowDialog
+        open={showAddToWorkflowDialog}
+        onOpenChange={setShowAddToWorkflowDialog}
+        onAddToWorkflow={handleAddToWorkflow}
+        document={selectedDocument}
+      />
     </div>
   )
 }

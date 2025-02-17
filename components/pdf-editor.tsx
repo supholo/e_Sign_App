@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useRef } from "react"
 import { Document, Page } from "@react-pdf/renderer"
 import { Button } from "@/components/ui/button"

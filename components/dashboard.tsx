@@ -1,10 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, Clock, CheckCircle, XCircle, RotateCcw } from "lucide-react"
 import { RecentActivities } from "@/components/recent-activities"
-import { useDashboardData } from "@/hooks/use-dashboard-data"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -14,24 +13,46 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search, Download } from "lucide-react"
+import { dashboardApi } from "@/lib/api/dashboardApi"
+import type { DashboardData } from "@/lib/models/dashboard"
+import { useAuth } from "@/hooks/useAuth"
+import { Loading } from "@/components/loading"
 
 export function Dashboard() {
-  const { dashboardData, refreshDashboardData } = useDashboardData()
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const { toast } = useToast()
+  const { user } = useAuth()
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        refreshDashboardData()
+    const fetchDashboardData = async () => {
+      if (!user) return
+      try {
+        setIsLoading(true)
+        const data = await dashboardApi.getDashboardData()
+        setDashboardData(data)
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch dashboard data. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    document.addEventListener("visibilitychange", handleVisibilityChange)
+    fetchDashboardData()
+  }, [user, toast])
 
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-    }
-  }, [refreshDashboardData])
+  if (isLoading) {
+    return <Loading />
+  }
+
+  if (!dashboardData) {
+    return <div>No dashboard data available.</div>
+  }
 
   const statusColors = {
     Draft: "bg-gray-500",

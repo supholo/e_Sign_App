@@ -22,7 +22,9 @@ import {
   Lock,
   ArrowRight,
 } from "lucide-react"
-import { mockDb, type Workflow, type Document } from "@/lib/mock-db"
+import { workflowsApi } from "@/lib/api/workflowsApi"
+import type { Workflow, Document } from "@/lib/models/workflow"
+import { useAuth } from "@/hooks/useAuth"
 
 type WorkflowDialogProps = {
   workflow: Workflow | null
@@ -35,23 +37,28 @@ type WorkflowDialogProps = {
 export function WorkflowDialog({ workflow, document, open, onOpenChange, onUpdateWorkflow }: WorkflowDialogProps) {
   const [activeTab, setActiveTab] = useState("overview")
   const [showMoveStateDialog, setShowMoveStateDialog] = useState(false)
+  const { user } = useAuth()
 
-  if (!workflow || !document) return null
+  if (!workflow || !document || !user) return null
 
   const currentStep = workflow.steps[document.currentStep ?? 0]
   const completedSteps = document.currentStep ?? 0
   const progress = ((document.currentStep ?? 0) / workflow.steps.length) * 100
   const isWorkflowCompleted = workflow.status === "Completed"
 
-  const handleMoveState = () => {
-    const updatedDocument = mockDb.moveWorkflowToNextStep(document.id)
-    if (updatedDocument) {
-      const updatedWorkflow = mockDb.getWorkflowById(workflow.id)
-      if (updatedWorkflow) {
-        onUpdateWorkflow(updatedWorkflow)
+  const handleMoveState = async () => {
+    try {
+      const updatedDocument = await workflowsApi.moveWorkflowToNextStep(document.id)
+      if (updatedDocument) {
+        const updatedWorkflow = await workflowsApi.getWorkflowById(workflow.id)
+        if (updatedWorkflow) {
+          onUpdateWorkflow(updatedWorkflow)
+        }
       }
+      setShowMoveStateDialog(false)
+    } catch (error) {
+      console.error("Error moving workflow to next step:", error)
     }
-    setShowMoveStateDialog(false)
   }
 
   const isMoveToNextStateDisabled = document.status === "Pending for Sign" || isWorkflowCompleted

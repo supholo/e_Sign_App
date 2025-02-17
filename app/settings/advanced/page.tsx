@@ -8,28 +8,63 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/components/ui/use-toast"
-import { mockDb, type AdvancedSettings } from "@/lib/mock-db"
+import { settingsApi } from "@/lib/api/settingsApi"
+import { useAuth } from "@/hooks/useAuth"
+import { Loading } from "@/components/loading"
+import type { AdvancedSettings } from "@/lib/models/settings"
 
 export default function AdvancedSettingsPage() {
   const [settings, setSettings] = useState<AdvancedSettings | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
 
   useEffect(() => {
-    setSettings(mockDb.getAdvancedSettings())
-  }, [])
+    const fetchSettings = async () => {
+      if (!user) return
+      try {
+        setIsLoading(true)
+        const fetchedSettings = await settingsApi.getAdvancedSettings()
+        setSettings(fetchedSettings)
+      } catch (error) {
+        console.error("Error fetching advanced settings:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch advanced settings. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchSettings()
+  }, [user])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (settings) {
-      const updatedSettings = mockDb.updateAdvancedSettings(settings)
-      setSettings(updatedSettings)
-      toast({
-        title: "Success",
-        description: "Advanced settings updated successfully.",
-      })
+      try {
+        const updatedSettings = await settingsApi.updateAdvancedSettings(settings)
+        setSettings(updatedSettings)
+        toast({
+          title: "Success",
+          description: "Advanced settings updated successfully.",
+        })
+      } catch (error) {
+        console.error("Error updating advanced settings:", error)
+        toast({
+          title: "Error",
+          description: "Failed to update advanced settings. Please try again.",
+          variant: "destructive",
+        })
+      }
     }
   }
 
-  if (!settings) {
-    return <Layout>Loading...</Layout>
+  if (isLoading) {
+    return <Loading />
+  }
+
+  if (!user || !settings) {
+    return null // The Layout component will handle redirection
   }
 
   return (

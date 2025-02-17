@@ -5,22 +5,49 @@ import { Layout } from "@/components/layout"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search } from "lucide-react"
-import { mockDb, type AuditLog } from "@/lib/mock-db"
+import { auditLogsApi } from "@/lib/api/auditLogsApi"
+import type { AuditLog } from "@/lib/models/auditLog"
+import { useAuth } from "@/hooks/useAuth"
+import { Loading } from "@/components/loading"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function AuditLogs() {
+  console.log("AuditLogs component rendering")
   const [searchTerm, setSearchTerm] = useState("")
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
+  const { toast } = useToast()
 
   useEffect(() => {
-    const fetchAuditLogs = () => {
-      setAuditLogs(mockDb.getAuditLogs())
+    console.log("AuditLogs useEffect running")
+    const fetchAuditLogs = async () => {
+      if (!user) {
+        console.log("No user, skipping fetch")
+        return
+      }
+      try {
+        console.log("Fetching audit logs")
+        setIsLoading(true)
+        const logs = await auditLogsApi.getAuditLogs()
+        console.log("Audit logs fetched:", logs)
+        setAuditLogs(logs)
+      } catch (error) {
+        console.error("Error fetching audit logs:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch audit logs. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
 
     fetchAuditLogs()
-    const intervalId = setInterval(fetchAuditLogs, 5000)
-    return () => clearInterval(intervalId)
-  }, [])
+  }, [user, toast])
 
+  console.log("Filtering logs")
   const filteredLogs = auditLogs.filter(
     (log) =>
       log.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -28,6 +55,17 @@ export default function AuditLogs() {
       log.userName.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
+  if (isLoading) {
+    console.log("Rendering loading state")
+    return <Loading />
+  }
+
+  if (!user) {
+    console.log("No user, rendering null")
+    return null // The Layout component will handle redirection
+  }
+
+  console.log("Rendering audit logs table")
   return (
     <Layout>
       <div className="space-y-6">

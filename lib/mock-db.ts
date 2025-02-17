@@ -1069,536 +1069,417 @@ class MockDatabase {
     return this.auditLogs
   }
 
-
-// Add new methods for workflow management
-getWorkflowCategories()
-: WorkflowCategory[]
-{
-  return this.categories
-}
-
-getWorkflowCategory(id: string)
-: WorkflowCategory | undefined
-{
-  return this.categories.find((category) => category.id === id)
-}
-
-addWorkflowTemplate(
-    categoryId: string,
-    template: Omit<WorkflowTemplate, "id" | "createdAt" | "updatedAt">,
-  )
-: WorkflowTemplate | undefined
-{
-  const category = this.categories.find((c) => c.id === categoryId)
-  if (!category) return undefined
-
-  const newTemplate: WorkflowTemplate = {
-    ...template,
-    id: uuidv4(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    createdBy: "current-user-id",
-    isTemplate: true,
-    status: "active",
+  // Add new methods for workflow management
+  getWorkflowCategories(): WorkflowCategory[] {
+    return this.categories
   }
 
-  category.workflows.push(newTemplate)
-  return newTemplate
-}
+  getWorkflowCategory(id: string): WorkflowCategory | undefined {
+    return this.categories.find((category) => category.id === id)
+  }
 
-updateWorkflowTemplate(
+  addWorkflowTemplate(
+    categoryId: string,
+    template: Omit<WorkflowTemplate, "id" | "createdAt" | "updatedAt">,
+  ): WorkflowTemplate | undefined {
+    const category = this.categories.find((c) => c.id === categoryId)
+    if (!category) return undefined
+
+    const newTemplate: WorkflowTemplate = {
+      ...template,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: "current-user-id",
+      isTemplate: true,
+      status: "active",
+    }
+
+    category.workflows.push(newTemplate)
+    return newTemplate
+  }
+
+  updateWorkflowTemplate(
     categoryId: string,
     templateId: string,
     updates: Partial<WorkflowTemplate>,
-  )
-: WorkflowTemplate | undefined
-{
-  const category = this.categories.find((c) => c.id === categoryId)
-  if (!category) return undefined
+  ): WorkflowTemplate | undefined {
+    const category = this.categories.find((c) => c.id === categoryId)
+    if (!category) return undefined
 
-  const index = category.workflows.findIndex((w) => w.id === templateId)
-  if (index === -1) return undefined
+    const index = category.workflows.findIndex((w) => w.id === templateId)
+    if (index === -1) return undefined
 
-  category.workflows[index] = {
-    ...category.workflows[index],
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  }
-
-  return category.workflows[index]
-}
-
-deleteWorkflowTemplate(categoryId: string, templateId: string)
-: boolean
-{
-  const category = this.categories.find((c) => c.id === categoryId)
-  if (!category) return false
-
-  const initialLength = category.workflows.length
-  category.workflows = category.workflows.filter((w) => w.id !== templateId)
-  return category.workflows.length < initialLength
-}
-
-searchWorkflows(query: string)
-: WorkflowTemplate[]
-{
-  const results: WorkflowTemplate[] = []
-  this.categories.forEach((category) => {
-    const matches = category.workflows.filter(
-      (workflow) =>
-        workflow.name.toLowerCase().includes(query.toLowerCase()) ||
-        workflow.description.toLowerCase().includes(query.toLowerCase()),
-    )
-    results.push(...matches)
-  })
-  return results
-}
-
-// Add methods for category management
-getCategories()
-: Category[]
-{
-  return this.categories
-}
-
-getCategoryById(id: string)
-: Category | undefined
-{
-  return this.categories.find((category) => category.id === id)
-}
-
-addCategory(category: Omit<Category, "id">)
-: Category
-{
-  const newCategory = { ...category, id: uuidv4() }
-  this.categories.push(newCategory)
-  return newCategory
-}
-
-updateCategory(id: string, updates: Partial<Category>)
-: Category | undefined
-{
-  const index = this.categories.findIndex((category) => category.id === id)
-  if (index !== -1) {
-    this.categories[index] = { ...this.categories[index], ...updates }
-    return this.categories[index]
-  }
-  return undefined
-}
-
-deleteCategory(id: string)
-: boolean
-{
-  const initialLength = this.categories.length
-  this.categories = this.categories.filter((category) => category.id !== id)
-  return this.categories.length < initialLength
-}
-
-getWorkflowTemplates()
-: WorkflowTemplate[]
-{
-  return this.workflowTemplates
-}
-
-getWorkflowTemplateById(id: string)
-: WorkflowTemplate | undefined
-{
-  return this.workflowTemplates.find((template) => template.id === id)
-}
-
-addWorkflowTemplate(template: Omit<WorkflowTemplate, "id" | "createdAt" | "updatedAt">)
-: WorkflowTemplate
-{
-  const newTemplate: WorkflowTemplate = {
-    ...template,
-    id: uuidv4(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    createdBy: "current-user-id",
-    isTemplate: true,
-    status: "active",
-  }
-  this.workflowTemplates.push(newTemplate)
-
-  // Also add the new workflow to the appropriate category
-  const category = this.categories.find((c) => c.id === template.categoryId)
-  if (category) {
-    category.workflows.push(newTemplate)
-  }
-
-  return newTemplate
-}
-
-updateWorkflowTemplate(id: string, updates: Partial<WorkflowTemplate>)
-: WorkflowTemplate | undefined
-{
-  const index = this.workflowTemplates.findIndex((template) => template.id === id)
-  if (index !== -1) {
-    this.workflowTemplates[index] = {
-      ...this.workflowTemplates[index],
+    category.workflows[index] = {
+      ...category.workflows[index],
       ...updates,
       updatedAt: new Date().toISOString(),
     }
-    return this.workflowTemplates[index]
-  }
-  return undefined
-}
 
-deleteWorkflowTemplate(id: string)
-: boolean
-{
-  const initialLength = this.workflowTemplates.length
-  this.workflowTemplates = this.workflowTemplates.filter((template) => template.id !== id)
-  return this.workflowTemplates.length < initialLength
-}
-
-// Subscription methods
-getSubscriptionPlans()
-: SubscriptionPlan[]
-{
-  return this.subscriptionPlans
-}
-
-updateSubscription(planId: string)
-: SubscriptionPlan
-{
-  const plan = this.subscriptionPlans.find((p) => p.id === planId)
-  if (!plan) throw new Error("Plan not found")
-  this.subscriptionPlans = this.subscriptionPlans.map((p) => ({ ...p, isActive: p.id === planId }))
-  return { ...plan, isActive: true }
-}
-
-// Department methods
-getDepartments()
-: Department[]
-{
-  return this.departments
-}
-
-createDepartment(department: Omit<Department, "id">)
-: Department
-{
-  const newDepartment = { ...department, id: uuidv4() }
-  this.departments.push(newDepartment)
-  return newDepartment
-}
-
-updateDepartment(id: string, updates: Partial<Department>)
-: Department
-{
-  const index = this.departments.findIndex((d) => d.id === id)
-  if (index === -1) throw new Error("Department not found")
-  this.departments[index] = { ...this.departments[index], ...updates }
-  return this.departments[index]
-}
-
-deleteDepartment(id: string)
-: void
-{
-  this.departments = this.departments.filter((d) => d.id !== id)
-}
-
-// Role methods
-getRoles()
-: Role[]
-{
-  return this.roles
-}
-
-createRole(role: Omit<Role, "id">)
-: Role
-{
-  const newRole = { ...role, id: uuidv4() }
-  this.roles.push(newRole)
-  return newRole
-}
-
-updateRole(id: string, updates: Partial<Role>)
-: Role
-{
-  const index = this.roles.findIndex((r) => r.id === id)
-  if (index === -1) throw new Error("Role not found")
-  this.roles[index] = { ...this.roles[index], ...updates }
-  return this.roles[index]
-}
-
-deleteRole(id: string)
-: void
-{
-  this.roles = this.roles.filter((r) => r.id !== id)
-}
-
-getAuthorizers()
-: Authorizer[]
-{
-  return this.authorizers
-}
-
-createAuthorizer(authorizer: Omit<Authorizer, "id">)
-: Authorizer
-{
-  const newAuthorizer = { ...authorizer, id: uuidv4() }
-  this.authorizers.push(newAuthorizer)
-  return newAuthorizer
-}
-
-updateAuthorizer(id: string, updates: Partial<Authorizer>)
-: Authorizer
-{
-  const index = this.authorizers.findIndex((a) => a.id === id)
-  if (index === -1) throw new Error("Authorizer not found")
-  this.authorizers[index] = { ...this.authorizers[index], ...updates }
-  return this.authorizers[index]
-}
-
-deleteAuthorizer(id: string)
-: void
-{
-  this.authorizers = this.authorizers.filter((a) => a.id !== id)
-}
-
-getCustomizationSettings()
-: CustomizationSettings
-{
-  return this.customizationSettings
-}
-
-updateCustomizationSettings(settings: CustomizationSettings)
-: void
-{
-  this.customizationSettings = settings
-}
-
-createFlexiformTemplate(template: Omit<FlexiformTemplate, "id" | "createdAt">)
-: FlexiformTemplate
-{
-  const newTemplate: FlexiformTemplate = {
-    ...template,
-    id: uuidv4(),
-    createdAt: new Date().toISOString(),
+    return category.workflows[index]
   }
 
-  this.templates.push(newTemplate)
+  deleteWorkflowTemplate(categoryId: string, templateId: string): boolean {
+    const category = this.categories.find((c) => c.id === categoryId)
+    if (!category) return false
 
-  this.addRecentActivity({
-    type: "template",
-    action: "created",
-    itemId: newTemplate.id,
-    itemName: newTemplate.name,
-    userId: "current-user-id",
-    userName: "Current User",
-  })
-
-  return newTemplate
-}
-
-getFlexiformTemplates()
-: FlexiformTemplate[]
-{
-  return this.templates.filter((template): template is FlexiformTemplate => template.type === "flexiform")
-}
-
-updateFlexiformTemplate(id: string, updates: Partial<FlexiformTemplate>)
-: FlexiformTemplate | undefined
-{
-  const index = this.templates.findIndex((template) => template.id === id && template.type === "flexiform")
-  if (index !== -1) {
-    this.templates[index] = { ...this.templates[index], ...updates }
-    return this.templates[index] as FlexiformTemplate
+    const initialLength = category.workflows.length
+    category.workflows = category.workflows.filter((w) => w.id !== templateId)
+    return category.workflows.length < initialLength
   }
-  return undefined
-}
 
-deleteFlexiformTemplate(id: string)
-: boolean
-{
-  const initialLength = this.templates.length
-  this.templates = this.templates.filter((template) => !(template.id === id && template.type === "flexiform"))
-  return this.templates.length < initialLength
-}
-
-getSavedSignatures()
-: SavedSignature[]
-{
-  return this.savedSignatures
-}
-
-saveSignature(signature: Omit<SavedSignature, "id" | "createdAt">)
-: SavedSignature
-{
-  const newSignature: SavedSignature = {
-    ...signature,
-    id: uuidv4(),
-    createdAt: new Date().toISOString(),
+  searchWorkflows(query: string): WorkflowTemplate[] {
+    const results: WorkflowTemplate[] = []
+    this.categories.forEach((category) => {
+      const matches = category.workflows.filter(
+        (workflow) =>
+          workflow.name.toLowerCase().includes(query.toLowerCase()) ||
+          workflow.description.toLowerCase().includes(query.toLowerCase()),
+      )
+      results.push(...matches)
+    })
+    return results
   }
-  this.savedSignatures.push(newSignature)
-  return newSignature
-}
 
-deleteSavedSignature(id: string)
-: boolean
-{
-  const initialLength = this.savedSignatures.length
-  this.savedSignatures = this.savedSignatures.filter((sig) => sig.id !== id)
-  return this.savedSignatures.length < initialLength
-}
-
-getEmailTemplates()
-: EmailTemplate[]
-{
-  return this.emailTemplates
-}
-
-getEmailTemplateById(id: string)
-: EmailTemplate | undefined
-{
-  return this.emailTemplates.find((template) => template.id === id)
-}
-
-createEmailTemplate(template: Omit<EmailTemplate, "id" | "createdAt" | "updatedAt">)
-: EmailTemplate
-{
-  const newTemplate: EmailTemplate = {
-    ...template,
-    id: uuidv4(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+  // Add methods for category management
+  getCategories(): Category[] {
+    return this.categories
   }
-  this.emailTemplates.push(newTemplate)
-  return newTemplate
-}
 
-updateEmailTemplate(id: string, updates: Partial<EmailTemplate>)
-: EmailTemplate | undefined
-{
-  const index = this.emailTemplates.findIndex((template) => template.id === id)
-  if (index !== -1) {
-    this.emailTemplates[index] = {
-      ...this.emailTemplates[index],
-      ...updates,
+  getCategoryById(id: string): Category | undefined {
+    return this.categories.find((category) => category.id === id)
+  }
+
+  addCategory(category: Omit<Category, "id">): Category {
+    const newCategory = { ...category, id: uuidv4() }
+    this.categories.push(newCategory)
+    return newCategory
+  }
+
+  updateCategory(id: string, updates: Partial<Category>): Category | undefined {
+    const index = this.categories.findIndex((category) => category.id === id)
+    if (index !== -1) {
+      this.categories[index] = { ...this.categories[index], ...updates }
+      return this.categories[index]
+    }
+    return undefined
+  }
+
+  deleteCategory(id: string): boolean {
+    const initialLength = this.categories.length
+    this.categories = this.categories.filter((category) => category.id !== id)
+    return this.categories.length < initialLength
+  }
+
+  getWorkflowTemplates(): WorkflowTemplate[] {
+    return this.workflowTemplates
+  }
+
+  getWorkflowTemplateById(id: string): WorkflowTemplate | undefined {
+    return this.workflowTemplates.find((template) => template.id === id)
+  }
+
+  addWorkflowTemplate(template: Omit<WorkflowTemplate, "id" | "createdAt" | "updatedAt">): WorkflowTemplate {
+    const newTemplate: WorkflowTemplate = {
+      ...template,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: "current-user-id",
+      isTemplate: true,
+      status: "active",
+    }
+    this.workflowTemplates.push(newTemplate)
+
+    // Also add the new workflow to the appropriate category
+    const category = this.categories.find((c) => c.id === template.categoryId)
+    if (category) {
+      category.workflows.push(newTemplate)
+    }
+
+    return newTemplate
+  }
+
+  updateWorkflowTemplate(id: string, updates: Partial<WorkflowTemplate>): WorkflowTemplate | undefined {
+    const index = this.workflowTemplates.findIndex((template) => template.id === id)
+    if (index !== -1) {
+      this.workflowTemplates[index] = {
+        ...this.workflowTemplates[index],
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      }
+      return this.workflowTemplates[index]
+    }
+    return undefined
+  }
+
+  deleteWorkflowTemplate(id: string): boolean {
+    const initialLength = this.workflowTemplates.length
+    this.workflowTemplates = this.workflowTemplates.filter((template) => template.id !== id)
+    return this.workflowTemplates.length < initialLength
+  }
+
+  // Subscription methods
+  getSubscriptionPlans(): SubscriptionPlan[] {
+    return this.subscriptionPlans
+  }
+
+  updateSubscription(planId: string): SubscriptionPlan {
+    const plan = this.subscriptionPlans.find((p) => p.id === planId)
+    if (!plan) throw new Error("Plan not found")
+    this.subscriptionPlans = this.subscriptionPlans.map((p) => ({ ...p, isActive: p.id === planId }))
+    return { ...plan, isActive: true }
+  }
+
+  // Department methods
+  getDepartments(): Department[] {
+    return this.departments
+  }
+
+  createDepartment(department: Omit<Department, "id">): Department {
+    const newDepartment = { ...department, id: uuidv4() }
+    this.departments.push(newDepartment)
+    return newDepartment
+  }
+
+  updateDepartment(id: string, updates: Partial<Department>): Department {
+    const index = this.departments.findIndex((d) => d.id === id)
+    if (index === -1) throw new Error("Department not found")
+    this.departments[index] = { ...this.departments[index], ...updates }
+    return this.departments[index]
+  }
+
+  deleteDepartment(id: string): void {
+    this.departments = this.departments.filter((d) => d.id !== id)
+  }
+
+  // Role methods
+  getRoles(): Role[] {
+    return this.roles
+  }
+
+  createRole(role: Omit<Role, "id">): Role {
+    const newRole = { ...role, id: uuidv4() }
+    this.roles.push(newRole)
+    return newRole
+  }
+
+  updateRole(id: string, updates: Partial<Role>): Role {
+    const index = this.roles.findIndex((r) => r.id === id)
+    if (index === -1) throw new Error("Role not found")
+    this.roles[index] = { ...this.roles[index], ...updates }
+    return this.roles[index]
+  }
+
+  deleteRole(id: string): void {
+    this.roles = this.roles.filter((r) => r.id !== id)
+  }
+
+  getAuthorizers(): Authorizer[] {
+    return this.authorizers
+  }
+
+  createAuthorizer(authorizer: Omit<Authorizer, "id">): Authorizer {
+    const newAuthorizer = { ...authorizer, id: uuidv4() }
+    this.authorizers.push(newAuthorizer)
+    return newAuthorizer
+  }
+
+  updateAuthorizer(id: string, updates: Partial<Authorizer>): Authorizer {
+    const index = this.authorizers.findIndex((a) => a.id === id)
+    if (index === -1) throw new Error("Authorizer not found")
+    this.authorizers[index] = { ...this.authorizers[index], ...updates }
+    return this.authorizers[index]
+  }
+
+  deleteAuthorizer(id: string): void {
+    this.authorizers = this.authorizers.filter((a) => a.id !== id)
+  }
+
+  getCustomizationSettings(): CustomizationSettings {
+    return this.customizationSettings
+  }
+
+  updateCustomizationSettings(settings: CustomizationSettings): void {
+    this.customizationSettings = settings
+  }
+
+  createFlexiformTemplate(template: Omit<FlexiformTemplate, "id" | "createdAt">): FlexiformTemplate {
+    const newTemplate: FlexiformTemplate = {
+      ...template,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+    }
+
+    this.templates.push(newTemplate)
+
+    this.addRecentActivity({
+      type: "template",
+      action: "created",
+      itemId: newTemplate.id,
+      itemName: newTemplate.name,
+      userId: "current-user-id",
+      userName: "Current User",
+    })
+
+    return newTemplate
+  }
+
+  getFlexiformTemplates(): FlexiformTemplate[] {
+    return this.templates.filter((template): template is FlexiformTemplate => template.type === "flexiform")
+  }
+
+  updateFlexiformTemplate(id: string, updates: Partial<FlexiformTemplate>): FlexiformTemplate | undefined {
+    const index = this.templates.findIndex((template) => template.id === id && template.type === "flexiform")
+    if (index !== -1) {
+      this.templates[index] = { ...this.templates[index], ...updates }
+      return this.templates[index] as FlexiformTemplate
+    }
+    return undefined
+  }
+
+  deleteFlexiformTemplate(id: string): boolean {
+    const initialLength = this.templates.length
+    this.templates = this.templates.filter((template) => !(template.id === id && template.type === "flexiform"))
+    return this.templates.length < initialLength
+  }
+
+  getSavedSignatures(): SavedSignature[] {
+    return this.savedSignatures
+  }
+
+  saveSignature(signature: Omit<SavedSignature, "id" | "createdAt">): SavedSignature {
+    const newSignature: SavedSignature = {
+      ...signature,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+    }
+    this.savedSignatures.push(newSignature)
+    return newSignature
+  }
+
+  deleteSavedSignature(id: string): boolean {
+    const initialLength = this.savedSignatures.length
+    this.savedSignatures = this.savedSignatures.filter((sig) => sig.id !== id)
+    return this.savedSignatures.length < initialLength
+  }
+
+  getEmailTemplates(): EmailTemplate[] {
+    return this.emailTemplates
+  }
+
+  getEmailTemplateById(id: string): EmailTemplate | undefined {
+    return this.emailTemplates.find((template) => template.id === id)
+  }
+
+  createEmailTemplate(template: Omit<EmailTemplate, "id" | "createdAt" | "updatedAt">): EmailTemplate {
+    const newTemplate: EmailTemplate = {
+      ...template,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
-    return this.emailTemplates[index]
+    this.emailTemplates.push(newTemplate)
+    return newTemplate
   }
-  return undefined
-}
 
-deleteEmailTemplate(id: string)
-: boolean
-{
-  const initialLength = this.emailTemplates.length
-  this.emailTemplates = this.emailTemplates.filter((template) => template.id !== id)
-  return this.emailTemplates.length < initialLength
-}
-
-// Custom Fields CRUD operations
-getCustomFields()
-: CustomField[]
-{
-  return this.customFields
-}
-
-getCustomFieldById(id: string)
-: CustomField | undefined
-{
-  return this.customFields.find((field) => field.id === id)
-}
-
-createCustomField(field: Omit<CustomField, "id">)
-: CustomField
-{
-  const newField = { ...field, id: uuidv4() }
-  this.customFields.push(newField)
-  return newField
-}
-
-updateCustomField(id: string, updates: Partial<CustomField>)
-: CustomField | undefined
-{
-  const index = this.customFields.findIndex((field) => field.id === id)
-  if (index !== -1) {
-    this.customFields[index] = { ...this.customFields[index], ...updates }
-    return this.customFields[index]
+  updateEmailTemplate(id: string, updates: Partial<EmailTemplate>): EmailTemplate | undefined {
+    const index = this.emailTemplates.findIndex((template) => template.id === id)
+    if (index !== -1) {
+      this.emailTemplates[index] = {
+        ...this.emailTemplates[index],
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      }
+      return this.emailTemplates[index]
+    }
+    return undefined
   }
-  return undefined
-}
 
-deleteCustomField(id: string)
-: boolean
-{
-  const initialLength = this.customFields.length
-  this.customFields = this.customFields.filter((field) => field.id !== id)
-  return this.customFields.length < initialLength
-}
+  deleteEmailTemplate(id: string): boolean {
+    const initialLength = this.emailTemplates.length
+    this.emailTemplates = this.emailTemplates.filter((template) => template.id !== id)
+    return this.emailTemplates.length < initialLength
+  }
 
-// Advanced Settings CRUD operations
-getAdvancedSettings()
-: AdvancedSettings
-{
-  return this.advancedSettings
-}
+  // Custom Fields CRUD operations
+  getCustomFields(): CustomField[] {
+    return this.customFields
+  }
 
-updateAdvancedSettings(updates: Partial<AdvancedSettings>)
-: AdvancedSettings
-{
-  this.advancedSettings = { ...this.advancedSettings, ...updates }
-  return this.advancedSettings
-}
+  getCustomFieldById(id: string): CustomField | undefined {
+    return this.customFields.find((field) => field.id === id)
+  }
 
-// PDF Settings CRUD operations
-getPDFSettings()
-: PDFSettings
-{
-  return this.pdfSettings
-}
+  createCustomField(field: Omit<CustomField, "id">): CustomField {
+    const newField = { ...field, id: uuidv4() }
+    this.customFields.push(newField)
+    return newField
+  }
 
-updatePDFSettings(updates: Partial<PDFSettings>)
-: PDFSettings
-{
-  this.pdfSettings = { ...this.pdfSettings, ...updates }
-  return this.pdfSettings
-}
+  updateCustomField(id: string, updates: Partial<CustomField>): CustomField | undefined {
+    const index = this.customFields.findIndex((field) => field.id === id)
+    if (index !== -1) {
+      this.customFields[index] = { ...this.customFields[index], ...updates }
+      return this.customFields[index]
+    }
+    return undefined
+  }
 
-// Certificate Settings CRUD operations
-getCertificateSettings()
-: CertificateSettings
-{
-  return this.certificateSettings
-}
+  deleteCustomField(id: string): boolean {
+    const initialLength = this.customFields.length
+    this.customFields = this.customFields.filter((field) => field.id !== id)
+    return this.customFields.length < initialLength
+  }
 
-updateCertificateSettings(updates: Partial<CertificateSettings>)
-: CertificateSettings
-{
-  this.certificateSettings = { ...this.certificateSettings, ...updates }
-  return this.certificateSettings
-}
+  // Advanced Settings CRUD operations
+  getAdvancedSettings(): AdvancedSettings {
+    return this.advancedSettings
+  }
 
-// DSC Settings CRUD operations
-getDSCSettings()
-: DSCSettings
-{
-  return this.dscSettings
-}
+  updateAdvancedSettings(updates: Partial<AdvancedSettings>): AdvancedSettings {
+    this.advancedSettings = { ...this.advancedSettings, ...updates }
+    return this.advancedSettings
+  }
 
-updateDSCSettings(updates: Partial<DSCSettings>)
-: DSCSettings
-{
-  this.dscSettings = { ...this.dscSettings, ...updates }
-  return this.dscSettings
-}
+  // PDF Settings CRUD operations
+  getPDFSettings(): PDFSettings {
+    return this.pdfSettings
+  }
 
-getBrandingSettings()
-: BrandingSettings
-{
-  return this.brandingSettings;
-}
+  updatePDFSettings(updates: Partial<PDFSettings>): PDFSettings {
+    this.pdfSettings = { ...this.pdfSettings, ...updates }
+    return this.pdfSettings
+  }
 
-updateBrandingSettings(updates: Partial<BrandingSettings>)
-: BrandingSettings
-{
-  this.brandingSettings = { ...this.brandingSettings, ...updates }
-  return this.brandingSettings;
-}
+  // Certificate Settings CRUD operations
+  getCertificateSettings(): CertificateSettings {
+    return this.certificateSettings
+  }
+
+  updateCertificateSettings(updates: Partial<CertificateSettings>): CertificateSettings {
+    this.certificateSettings = { ...this.certificateSettings, ...updates }
+    return this.certificateSettings
+  }
+
+  // DSC Settings CRUD operations
+  getDSCSettings(): DSCSettings {
+    return this.dscSettings
+  }
+
+  updateDSCSettings(updates: Partial<DSCSettings>): DSCSettings {
+    this.dscSettings = { ...this.dscSettings, ...updates }
+    return this.dscSettings
+  }
+
+  getBrandingSettings(): BrandingSettings {
+    return this.brandingSettings
+  }
+
+  updateBrandingSettings(updates: Partial<BrandingSettings>): BrandingSettings {
+    this.brandingSettings = { ...this.brandingSettings, ...updates }
+    return this.brandingSettings
+  }
 }
 
 export const mockDb = new MockDatabase()

@@ -10,28 +10,63 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { toast } from "@/components/ui/use-toast"
-import { mockDb, type PDFSettings } from "@/lib/mock-db"
+import { settingsApi } from "@/lib/api/settingsApi"
+import { useAuth } from "@/hooks/useAuth"
+import { Loading } from "@/components/loading"
+import type { PDFSettings } from "@/lib/models/settings"
 
 export default function PDFSettingsPage() {
   const [settings, setSettings] = useState<PDFSettings | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
 
   useEffect(() => {
-    setSettings(mockDb.getPDFSettings())
-  }, [])
+    const fetchSettings = async () => {
+      if (!user) return
+      try {
+        setIsLoading(true)
+        const fetchedSettings = await settingsApi.getPDFSettings()
+        setSettings(fetchedSettings)
+      } catch (error) {
+        console.error("Error fetching PDF settings:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch PDF settings. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchSettings()
+  }, [user])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (settings) {
-      const updatedSettings = mockDb.updatePDFSettings(settings)
-      setSettings(updatedSettings)
-      toast({
-        title: "Success",
-        description: "PDF settings updated successfully.",
-      })
+      try {
+        const updatedSettings = await settingsApi.updatePDFSettings(settings)
+        setSettings(updatedSettings)
+        toast({
+          title: "Success",
+          description: "PDF settings updated successfully.",
+        })
+      } catch (error) {
+        console.error("Error updating PDF settings:", error)
+        toast({
+          title: "Error",
+          description: "Failed to update PDF settings. Please try again.",
+          variant: "destructive",
+        })
+      }
     }
   }
 
-  if (!settings) {
-    return <Layout>Loading...</Layout>
+  if (isLoading) {
+    return <Loading />
+  }
+
+  if (!user || !settings) {
+    return null // The Layout component will handle redirection
   }
 
   return (

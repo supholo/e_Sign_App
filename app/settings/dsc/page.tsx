@@ -8,32 +8,68 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "@/components/ui/use-toast"
-import { mockDb, type DSCSettings } from "@/lib/mock-db"
+import { useToast } from "@/components/ui/use-toast" // Import useToast
+import { settingsApi } from "@/lib/api/settingsApi"
 import { ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/useAuth"
+import { Loading } from "@/components/loading"
+import type { DSCSettings } from "@/lib/models/settings"
 
 export default function DSCSettingsPage() {
   const router = useRouter()
   const [settings, setSettings] = useState<DSCSettings | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
+  const { toast } = useToast() // Use the imported useToast
 
   useEffect(() => {
-    setSettings(mockDb.getDSCSettings())
-  }, [])
+    const fetchSettings = async () => {
+      if (!user) return
+      try {
+        setIsLoading(true)
+        const fetchedSettings = await settingsApi.getDSCSettings()
+        setSettings(fetchedSettings)
+      } catch (error) {
+        console.error("Error fetching DSC settings:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch DSC settings. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchSettings()
+  }, [user, toast])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (settings) {
-      const updatedSettings = mockDb.updateDSCSettings(settings)
-      setSettings(updatedSettings)
-      toast({
-        title: "Success",
-        description: "DSC settings updated successfully.",
-      })
+      try {
+        const updatedSettings = await settingsApi.updateDSCSettings(settings)
+        setSettings(updatedSettings)
+        toast({
+          title: "Success",
+          description: "DSC settings updated successfully.",
+        })
+      } catch (error) {
+        console.error("Error updating DSC settings:", error)
+        toast({
+          title: "Error",
+          description: "Failed to update DSC settings. Please try again.",
+          variant: "destructive",
+        })
+      }
     }
   }
 
-  if (!settings) {
-    return <Layout>Loading...</Layout>
+  if (isLoading) {
+    return <Loading />
+  }
+
+  if (!user || !settings) {
+    return null // The Layout component will handle redirection
   }
 
   return (

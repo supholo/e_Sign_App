@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Layout } from "@/components/layout"
 import { Button } from "@/components/ui/button"
@@ -11,38 +11,85 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { FileText, Plus, Search, Eye, Copy, Trash2 } from "lucide-react"
 import { PDFEditor } from "@/components/pdf-editor"
-
-const documentTypes = [
-  { id: "loan", name: "Loan Agreement" },
-  { id: "account", name: "Account Opening Form" },
-  { id: "kyc", name: "KYC Document" },
-  { id: "transfer", name: "Fund Transfer Form" },
-  { id: "fixed", name: "Fixed Deposit Form" },
-]
+import { templatesApi } from "@/lib/api/templatesApi"
+import type { Template } from "@/lib/models/template"
+import { useAuth } from "@/hooks/useAuth"
+import { Loading } from "@/components/loading"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function Templates() {
   const [activeTab, setActiveTab] = useState("editor")
   const [templateName, setTemplateName] = useState("")
   const [documentType, setDocumentType] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
+  const { toast } = useToast()
 
-  // Mock templates data
-  const templates = [
-    {
-      id: 1,
-      name: "Personal Loan Agreement",
-      type: "loan",
-      createdAt: "2024-02-10",
-      fields: 12,
-    },
-    {
-      id: 2,
-      name: "Savings Account Form",
-      type: "account",
-      createdAt: "2024-02-09",
-      fields: 8,
-    },
-  ]
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      if (!user) return
+      try {
+        setIsLoading(true)
+        const fetchedTemplates = await templatesApi.getTemplates()
+        setTemplates(fetchedTemplates)
+      } catch (error) {
+        console.error("Error fetching templates:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch templates. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchTemplates()
+  }, [user, toast])
+
+  const handleCreateTemplate = async () => {
+    try {
+      const newTemplate = await templatesApi.createTemplate({
+        name: templateName,
+        type: documentType,
+        createdAt: new Date().toISOString(),
+        fields: [],
+        pdfUrl: "",
+      })
+      setTemplates([...templates, newTemplate])
+      toast({
+        title: "Success",
+        description: "Template created successfully.",
+      })
+    } catch (error) {
+      console.error("Error creating template:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create template. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      await templatesApi.deleteTemplate(id)
+      setTemplates(templates.filter((template) => template.id !== id))
+      toast({
+        title: "Success",
+        description: "Template deleted successfully.",
+      })
+    } catch (error) {
+      console.error("Error deleting template:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete template. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   const filteredTemplates = templates.filter(
     (template) =>
@@ -50,13 +97,21 @@ export default function Templates() {
       template.type.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
+  if (isLoading) {
+    return <Loading />
+  }
+
+  if (!user) {
+    return null // The Layout component will handle redirection
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Document Templates</h1>
           <div className="flex space-x-2">
-            <Button>
+            <Button onClick={handleCreateTemplate}>
               <Plus className="mr-2 h-4 w-4" /> Create Template
             </Button>
             <Button asChild>
@@ -97,11 +152,10 @@ export default function Templates() {
                         <SelectValue placeholder="Select document type" />
                       </SelectTrigger>
                       <SelectContent>
-                        {documentTypes.map((type) => (
-                          <SelectItem key={type.id} value={type.id}>
-                            {type.name}
-                          </SelectItem>
-                        ))}
+                        {/* Add document types here */}
+                        <SelectItem value="loan">Loan Agreement</SelectItem>
+                        <SelectItem value="account">Account Opening Form</SelectItem>
+                        <SelectItem value="kyc">KYC Document</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -144,9 +198,7 @@ export default function Templates() {
                             </div>
                             <div>
                               <h3 className="font-medium">{template.name}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {documentTypes.find((t) => t.id === template.type)?.name}
-                              </p>
+                              <p className="text-sm text-muted-foreground">{template.type}</p>
                             </div>
                           </div>
                           <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -156,14 +208,14 @@ export default function Templates() {
                             <Button variant="ghost" size="icon">
                               <Copy className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteTemplate(template.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
                         <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-                          <span>{template.fields} Fields</span>
-                          <span>Created {template.createdAt}</span>
+                          <span>{template.fields.length} Fields</span>
+                          <span>Created {new Date(template.createdAt).toLocaleDateString()}</span>
                         </div>
                       </CardContent>
                     </Card>

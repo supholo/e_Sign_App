@@ -25,10 +25,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { useAuth } from "@/components/auth-provider"
+import { useAuth } from "@/hooks/useAuth"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { HeaderIcons } from "@/components/header-icons"
+import { useRouter } from "next/navigation"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -42,8 +43,19 @@ const navigation = [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { user, signOut } = useAuth()
+  const { user, logout } = useAuth()
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/sign-in")
+    }
+  }, [user, router])
+
+  if (!user) {
+    return null // or return a loading spinner
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground animate-fade-in">
@@ -167,7 +179,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     <DropdownMenuItem>Profile</DropdownMenuItem>
                     <DropdownMenuItem>Settings</DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={signOut}>Log out</DropdownMenuItem>
+                    <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

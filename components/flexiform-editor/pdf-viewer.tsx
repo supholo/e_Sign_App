@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useCallback, useState } from "react"
 import { Document, Page } from "react-pdf"
 import { useDroppable } from "@dnd-kit/core"

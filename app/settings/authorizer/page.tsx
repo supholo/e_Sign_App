@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Layout } from "@/components/layout"
 import { Button } from "@/components/ui/button"
@@ -8,16 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { mockDb } from "@/lib/mock-db"
-import { toast } from "@/components/ui/use-toast"
-
-type Authorizer = {
-  id: string
-  name: string
-  email: string
-  role: string
-  department: string
-}
+import { settingsApi } from "@/lib/api/settingsApi"
+import { useToast } from "@/components/ui/use-toast"
+import { useAuth } from "@/hooks/useAuth"
+import { Loading } from "@/components/loading"
+import type { Authorizer } from "@/lib/models/settings"
 
 export default function AuthorizerPage() {
   const [authorizers, setAuthorizers] = useState<Authorizer[]>([])
@@ -30,21 +27,41 @@ export default function AuthorizerPage() {
   const [editingAuthorizer, setEditingAuthorizer] = useState<Authorizer | null>(null)
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([])
   const [roles, setRoles] = useState<{ id: string; name: string }[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
+  const { user } = useAuth()
 
   useEffect(() => {
     const fetchData = async () => {
-      const fetchedAuthorizers = await mockDb.getAuthorizers()
-      setAuthorizers(fetchedAuthorizers)
-      setDepartments(await mockDb.getDepartments())
-      setRoles(await mockDb.getRoles())
+      if (!user) return
+      try {
+        setIsLoading(true)
+        const [fetchedAuthorizers, fetchedDepartments, fetchedRoles] = await Promise.all([
+          settingsApi.getAuthorizers(),
+          settingsApi.getDepartments(),
+          settingsApi.getRoles(),
+        ])
+        setAuthorizers(fetchedAuthorizers)
+        setDepartments(fetchedDepartments)
+        setRoles(fetchedRoles)
+      } catch (error) {
+        console.error("Error fetching data:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch data. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
     fetchData()
-  }, [])
+  }, [user, toast])
 
   const handleCreateAuthorizer = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const createdAuthorizer = await mockDb.createAuthorizer(newAuthorizer)
+      const createdAuthorizer = await settingsApi.createAuthorizer(newAuthorizer)
       setAuthorizers([...authorizers, createdAuthorizer])
       setNewAuthorizer({ name: "", email: "", role: "", department: "" })
       toast({
@@ -52,6 +69,7 @@ export default function AuthorizerPage() {
         description: `${createdAuthorizer.name} has been added as an authorizer.`,
       })
     } catch (error) {
+      console.error("Error creating authorizer:", error)
       toast({
         title: "Error",
         description: "Failed to create authorizer. Please try again.",
@@ -64,7 +82,7 @@ export default function AuthorizerPage() {
     e.preventDefault()
     if (!editingAuthorizer) return
     try {
-      const updatedAuthorizer = await mockDb.updateAuthorizer(editingAuthorizer.id, editingAuthorizer)
+      const updatedAuthorizer = await settingsApi.updateAuthorizer(editingAuthorizer.id, editingAuthorizer)
       setAuthorizers(authorizers.map((auth) => (auth.id === updatedAuthorizer.id ? updatedAuthorizer : auth)))
       setEditingAuthorizer(null)
       toast({
@@ -72,6 +90,7 @@ export default function AuthorizerPage() {
         description: `${updatedAuthorizer.name}'s information has been updated.`,
       })
     } catch (error) {
+      console.error("Error updating authorizer:", error)
       toast({
         title: "Error",
         description: "Failed to update authorizer. Please try again.",
@@ -82,19 +101,28 @@ export default function AuthorizerPage() {
 
   const handleDeleteAuthorizer = async (id: string) => {
     try {
-      await mockDb.deleteAuthorizer(id)
+      await settingsApi.deleteAuthorizer(id)
       setAuthorizers(authorizers.filter((auth) => auth.id !== id))
       toast({
         title: "Authorizer Deleted",
         description: "The authorizer has been removed successfully.",
       })
     } catch (error) {
+      console.error("Error deleting authorizer:", error)
       toast({
         title: "Error",
         description: "Failed to delete authorizer. Please try again.",
         variant: "destructive",
       })
     }
+  }
+
+  if (isLoading) {
+    return <Loading />
+  }
+
+  if (!user) {
+    return null // The Layout component will handle redirection
   }
 
   return (

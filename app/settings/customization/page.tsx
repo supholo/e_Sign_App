@@ -9,63 +9,63 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
-import { mockDb } from "@/lib/mock-db"
+import { settingsApi } from "@/lib/api/settingsApi"
 import { toast } from "@/components/ui/use-toast"
-
-type CustomizationSettings = {
-  theme: {
-    primaryColor: string
-    secondaryColor: string
-    fontFamily: string
-    darkMode: boolean
-  }
-  branding: {
-    logo: string
-    companyName: string
-    favicon: string
-  }
-  email: {
-    headerImage: string
-    footerText: string
-    signature: string
-  }
-  security: {
-    passwordStrength: number
-    twoFactorAuth: boolean
-    sessionTimeout: number
-  }
-}
+import { useAuth } from "@/hooks/useAuth"
+import { Loading } from "@/components/loading"
+import type { CustomizationSettings } from "@/lib/models/settings"
 
 export default function CustomizationPage() {
-  const [settings, setSettings] = useState<CustomizationSettings>({
-    theme: { primaryColor: "#000000", secondaryColor: "#ffffff", fontFamily: "Arial", darkMode: false },
-    branding: { logo: "", companyName: "", favicon: "" },
-    email: { headerImage: "", footerText: "", signature: "" },
-    security: { passwordStrength: 8, twoFactorAuth: false, sessionTimeout: 30 },
-  })
+  const [settings, setSettings] = useState<CustomizationSettings | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const fetchedSettings = await mockDb.getCustomizationSettings()
-      setSettings(fetchedSettings)
+      if (!user) return
+      try {
+        setIsLoading(true)
+        const fetchedSettings = await settingsApi.getCustomizationSettings()
+        setSettings(fetchedSettings)
+      } catch (error) {
+        console.error("Error fetching customization settings:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch customization settings. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
     fetchSettings()
-  }, [])
+  }, [user])
 
   const handleSaveSettings = async () => {
-    try {
-      await mockDb.updateCustomizationSettings(settings)
-      toast({
-        title: "Settings Saved",
-        description: "Your customization settings have been updated successfully.",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save settings. Please try again.",
-        variant: "destructive",
-      })
+    if (settings) {
+      try {
+        await settingsApi.updateCustomizationSettings(settings)
+        toast({
+          title: "Settings Saved",
+          description: "Your customization settings have been updated successfully.",
+        })
+      } catch (error) {
+        console.error("Error saving settings:", error)
+        toast({
+          title: "Error",
+          description: "Failed to save settings. Please try again.",
+          variant: "destructive",
+        })
+      }
     }
+  }
+
+  if (isLoading) {
+    return <Loading />
+  }
+
+  if (!user || !settings) {
+    return null // The Layout component will handle redirection
   }
 
   return (

@@ -2,15 +2,20 @@
 
 import { useEffect, useState } from "react"
 import { Activity, FileText, GitBranch, UserCheck, User } from "lucide-react"
-import { mockDb, type RecentActivity } from "@/lib/mock-db"
+import { recentActivitiesApi } from "@/lib/api/recentActivitiesApi"
+import type { RecentActivity } from "@/lib/models/recentActivity"
 
 export function RecentActivities() {
   const [activities, setActivities] = useState<RecentActivity[]>([])
 
   useEffect(() => {
-    const fetchActivities = () => {
-      const allActivities = mockDb.getRecentActivities()
-      setActivities(allActivities.slice(0, 6)) // Only take the last 6 entries
+    const fetchActivities = async () => {
+      try {
+        const fetchedActivities = await recentActivitiesApi.getRecentActivities()
+        setActivities(fetchedActivities.slice(0, 6)) // Only take the last 6 entries
+      } catch (error) {
+        console.error("Error fetching recent activities:", error)
+      }
     }
 
     fetchActivities()

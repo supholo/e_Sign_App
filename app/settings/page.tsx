@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Layout } from "@/components/layout"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,8 @@ import {
   FileJson,
   MailOpenIcon as Envelope,
 } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
+import { useToast } from "@/components/ui/use-toast"
 
 const adminSettings = [
   { icon: Activity, label: "Subscription", href: "/settings/subscription" },
@@ -47,6 +49,35 @@ export default function Settings() {
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [smsNotifications, setSmsNotifications] = useState(false)
   const router = useRouter()
+  const { user } = useAuth()
+  const { toast } = useToast()
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/sign-in")
+    }
+  }, [user, router])
+
+  const handleSavePreferences = async () => {
+    try {
+      // In a real application, you would call an API to save these preferences
+      // For now, we'll just show a success toast
+      toast({
+        title: "Preferences Saved",
+        description: "Your notification preferences have been updated.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save preferences. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (!user) {
+    return null // The Layout component will handle redirection
+  }
 
   return (
     <Layout>
@@ -68,11 +99,11 @@ export default function Settings() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" defaultValue="John Doe" />
+                  <Input id="name" defaultValue={user.name} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="john@example.com" />
+                  <Input id="email" type="email" defaultValue={user.email} />
                 </div>
               </CardContent>
               <CardFooter>
@@ -102,7 +133,7 @@ export default function Settings() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button>Save Preferences</Button>
+                <Button onClick={handleSavePreferences}>Save Preferences</Button>
               </CardFooter>
             </Card>
           </TabsContent>

@@ -8,10 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/use-toast"
-import { mockDb, type EmailTemplate } from "@/lib/mock-db"
+import { settingsApi } from "@/lib/api/settingsApi"
 import { Search, Plus, Edit, Trash2, Eye } from "lucide-react"
 import { EmailTemplateForm } from "@/components/email-template-form"
 import { EmailTemplatePreview } from "@/components/email-template-preview"
+import { useAuth } from "@/hooks/useAuth"
+import { Loading } from "@/components/loading"
+import type { EmailTemplate } from "@/lib/models/settings"
 
 export default function EmailTemplates() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -19,43 +22,88 @@ export default function EmailTemplates() {
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
+  //const { toast } = useToast() //This is already imported above
 
   useEffect(() => {
-    const fetchTemplates = () => {
-      setTemplates(mockDb.getEmailTemplates())
+    const fetchTemplates = async () => {
+      if (!user) return
+      try {
+        setIsLoading(true)
+        const fetchedTemplates = await settingsApi.getEmailTemplates()
+        setTemplates(fetchedTemplates)
+      } catch (error) {
+        console.error("Error fetching email templates:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch email templates. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
     fetchTemplates()
-  }, [])
+  }, [user])
 
-  const handleCreateTemplate = (template: Omit<EmailTemplate, "id" | "createdAt" | "updatedAt">) => {
-    const newTemplate = mockDb.createEmailTemplate(template)
-    setTemplates([...templates, newTemplate])
-    setIsFormOpen(false)
-    toast({
-      title: "Success",
-      description: "Email template created successfully.",
-    })
-  }
-
-  const handleUpdateTemplate = (id: string, updates: Partial<EmailTemplate>) => {
-    const updatedTemplate = mockDb.updateEmailTemplate(id, updates)
-    if (updatedTemplate) {
-      setTemplates(templates.map((t) => (t.id === id ? updatedTemplate : t)))
-      setSelectedTemplate(null)
+  const handleCreateTemplate = async (template: Omit<EmailTemplate, "id" | "createdAt" | "updatedAt">) => {
+    try {
+      const newTemplate = await settingsApi.createEmailTemplate(template)
+      setTemplates([...templates, newTemplate])
       setIsFormOpen(false)
       toast({
         title: "Success",
-        description: "Email template updated successfully.",
+        description: "Email template created successfully.",
+      })
+    } catch (error) {
+      console.error("Error creating email template:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create email template. Please try again.",
+        variant: "destructive",
       })
     }
   }
 
-  const handleDeleteTemplate = (id: string) => {
-    if (mockDb.deleteEmailTemplate(id)) {
-      setTemplates(templates.filter((t) => t.id !== id))
+  const handleUpdateTemplate = async (id: string, updates: Partial<EmailTemplate>) => {
+    try {
+      const updatedTemplate = await settingsApi.updateEmailTemplate(id, updates)
+      if (updatedTemplate) {
+        setTemplates(templates.map((t) => (t.id === id ? updatedTemplate : t)))
+        setSelectedTemplate(null)
+        setIsFormOpen(false)
+        toast({
+          title: "Success",
+          description: "Email template updated successfully.",
+        })
+      }
+    } catch (error) {
+      console.error("Error updating email template:", error)
       toast({
-        title: "Success",
-        description: "Email template deleted successfully.",
+        title: "Error",
+        description: "Failed to update email template. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      const success = await settingsApi.deleteEmailTemplate(id)
+      if (success) {
+        setTemplates(templates.filter((t) => t.id !== id))
+        toast({
+          title: "Success",
+          description: "Email template deleted successfully.",
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting email template:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete email template. Please try again.",
+        variant: "destructive",
       })
     }
   }
@@ -65,6 +113,14 @@ export default function EmailTemplates() {
       template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       template.subject.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+  if (isLoading) {
+    return <Loading />
+  }
+
+  if (!user) {
+    return null // The Layout component will handle redirection
+  }
 
   return (
     <Layout>

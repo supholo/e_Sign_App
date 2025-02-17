@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Layout } from "@/components/layout"
 import { Button } from "@/components/ui/button"
@@ -8,14 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { mockDb } from "@/lib/mock-db"
-import { toast } from "@/components/ui/use-toast"
-
-type Role = {
-  id: string
-  name: string
-  permissions: string[]
-}
+import { settingsApi } from "@/lib/api/settingsApi"
+import { useToast } from "@/components/ui/use-toast"
+import { useAuth } from "@/hooks/useAuth"
+import { Loading } from "@/components/loading"
+import type { Role } from "@/lib/models/settings"
 
 const availablePermissions = [
   "create_document",
@@ -28,21 +27,37 @@ const availablePermissions = [
 
 export default function AccessManagementPage() {
   const [roles, setRoles] = useState<Role[]>([])
-  const [newRole, setNewRole] = useState({ name: "", permissions: [] })
+  const [newRole, setNewRole] = useState({ name: "", permissions: [] as string[] })
   const [editingRole, setEditingRole] = useState<Role | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
+  const { user } = useAuth()
 
   useEffect(() => {
     const fetchRoles = async () => {
-      const fetchedRoles = await mockDb.getRoles()
-      setRoles(fetchedRoles)
+      if (!user) return
+      try {
+        setIsLoading(true)
+        const fetchedRoles = await settingsApi.getRoles()
+        setRoles(fetchedRoles)
+      } catch (error) {
+        console.error("Error fetching roles:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch roles. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
     fetchRoles()
-  }, [])
+  }, [user, toast])
 
   const handleCreateRole = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const createdRole = await mockDb.createRole(newRole)
+      const createdRole = await settingsApi.createRole(newRole)
       setRoles([...roles, createdRole])
       setNewRole({ name: "", permissions: [] })
       toast({
@@ -50,6 +65,7 @@ export default function AccessManagementPage() {
         description: `${createdRole.name} has been created successfully.`,
       })
     } catch (error) {
+      console.error("Error creating role:", error)
       toast({
         title: "Error",
         description: "Failed to create role. Please try again.",
@@ -62,7 +78,7 @@ export default function AccessManagementPage() {
     e.preventDefault()
     if (!editingRole) return
     try {
-      const updatedRole = await mockDb.updateRole(editingRole.id, editingRole)
+      const updatedRole = await settingsApi.updateRole(editingRole.id, editingRole)
       setRoles(roles.map((role) => (role.id === updatedRole.id ? updatedRole : role)))
       setEditingRole(null)
       toast({
@@ -70,6 +86,7 @@ export default function AccessManagementPage() {
         description: `${updatedRole.name} has been updated successfully.`,
       })
     } catch (error) {
+      console.error("Error updating role:", error)
       toast({
         title: "Error",
         description: "Failed to update role. Please try again.",
@@ -80,19 +97,28 @@ export default function AccessManagementPage() {
 
   const handleDeleteRole = async (id: string) => {
     try {
-      await mockDb.deleteRole(id)
+      await settingsApi.deleteRole(id)
       setRoles(roles.filter((role) => role.id !== id))
       toast({
         title: "Role Deleted",
         description: "The role has been deleted successfully.",
       })
     } catch (error) {
+      console.error("Error deleting role:", error)
       toast({
         title: "Error",
         description: "Failed to delete role. Please try again.",
         variant: "destructive",
       })
     }
+  }
+
+  if (isLoading) {
+    return <Loading />
+  }
+
+  if (!user) {
+    return null // The Layout component will handle redirection
   }
 
   return (
